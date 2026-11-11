@@ -2948,7 +2948,19 @@ if(!window.__wkLbl){window.__wkLbl=1;document.addEventListener('scroll',function
   var sc=e.target;if(!sc||sc.id!=='weekscroller'||sc.dataset.key!=='clsDay'||!sc.clientWidth)return;
   var wk=sc.children[Math.max(0,Math.min(sc.children.length-1,Math.round(sc.scrollLeft/sc.clientWidth)))];
   if(!wk||wk.children.length<7)return;
-  var l=document.getElementById('wklabel');if(l)l.textContent=wkLabel(wk.children[0].dataset.date,wk.children[6].dataset.date)},true)}
+  var l=document.getElementById('wklabel');if(l)l.textContent=wkLabel(wk.children[0].dataset.date,wk.children[6].dataset.date);ghostsTo(wk.children[0].dataset.date)},true)}
+function ghostsTo(monIso){
+  var m=parse(monIso);
+  [['.gh-l',[-3,-2,-1]],['.gh-r',[7,8,9]]].forEach(function(g){
+    var nodes=document.querySelectorAll(g[0]+' .gh');
+    nodes.forEach(function(n,i){
+      var d=addDays(m,g[1][i]);
+      n.dataset.date=iso(d);n.dataset.dow=d.getDay();
+      var sm=n.querySelector('small'),b=n.querySelector('b');
+      if(sm)sm.textContent=GIORNI3[d.getDay()];if(b)b.textContent=d.getDate();
+    });
+  });
+}
 function ghostDays(mon0,offs,cls){
   var m=parse(mon0);
   return '<div class="week gh-g '+cls+'" aria-hidden="true">'+offs.map(function(o){var d=addDays(m,o);
