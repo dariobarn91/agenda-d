@@ -1,5 +1,5 @@
 /* Agenda docente - service worker: uso offline e notifiche locali */
-const VERSION = 'ad-v2';
+const VERSION = 'ad-v3';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 const EXTERNAL_OK = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com', 'tessdata.projectnaptha.com'];
 
@@ -78,4 +78,14 @@ self.addEventListener('notificationclick', function (e) {
       return self.clients.openWindow('/');
     })
   );
+});
+
+
+/* notifiche push inviate dal server (Supabase) anche ad app chiusa */
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Agenda docente', {
+    body: d.body || '', tag: d.tag, icon: '/icon-192.png', badge: '/icon-192.png', lang: 'it'
+  }));
 });

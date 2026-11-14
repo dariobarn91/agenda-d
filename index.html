@@ -1121,7 +1121,7 @@ function migrate(){
   state.tasks.forEach(function(t){if(!t.type)t.type='altro';if(t.cls===undefined)t.cls=''});
   state.schools.forEach(function(sc){if(!sc.hours||sc.hours.length<1||sc.hours.length>12)sc.hours=defaultHours();var sp=Number(sc.split)||0;sc.splits=normSplits(Array.isArray(sc.splits)?sc.splits:(sp>0?[sp]:[]),sc.hours.length);delete sc.split});
   state.snotes=state.snotes||[];state.logs=state.logs||[];
-  state.remind=Object.assign({evMin:'15',evEve:true,evEveTime:'20:00',tkEve:true,tkEveTime:'20:00',tkMorn:true,tkMornTime:'08:00'},state.remind||{});
+  state.remind=Object.assign({evMin:'15',evEve:true,evEveTime:'20:00',tkEve:true,tkEveTime:'20:00',tkMorn:true,tkMornTime:'08:00',colMin:'10',colEve:true,colEveTime:'20:00'},state.remind||{});
   state.students.forEach(function(s){if(!s.tags)s.tags=[]});
   state.schools.forEach(function(sc){if(!sc.classColors)sc.classColors={};if(!sc.subjectColors)sc.subjectColors={}});
   state.lessons.forEach(function(l){
@@ -1853,7 +1853,10 @@ function vRemind(){
   h+='<div class="rm"><h2>Impegni</h2>'+
     '<div class="rmrow"><span>Prima dell\'inizio</span><select id="rm-evMin" aria-label="Avviso prima dell\'inizio">'+mins.map(function(m){return '<option value="'+m[0]+'"'+(String(c.evMin)===m[0]?' selected':'')+'>'+m[1]+'</option>'}).join('')+'</select></div>'+
     rmCheck('evEve','La sera prima alle',c.evEve,'evEveTime',c.evEveTime)+'</div>';
-  h+='<div class="rm"><h2>Attività in scadenza</h2>'+
+  h+='<div class="rm"><h2>Colloqui individuali</h2>'+
+    '<div class="rmrow"><span>Prima del colloquio</span><select id="rm-colMin" aria-label="Avviso prima del colloquio">'+[['0','Nessun avviso'],['5','5 minuti prima'],['10','10 minuti prima'],['15','15 minuti prima'],['30','30 minuti prima'],['60','1 ora prima']].map(function(m){return '<option value="'+m[0]+'"'+(String(c.colMin)===m[0]?' selected':'')+'>'+m[1]+'</option>'}).join('')+'</select></div>'+
+    rmCheck('colEve','La sera prima (riepilogo) alle',c.colEve,'colEveTime',c.colEveTime)+'</div>';
+  h+='<div class="rm"><h2>Attivit\u00e0 in scadenza</h2>'+
     rmCheck('tkEve','La sera prima alle',c.tkEve,'tkEveTime',c.tkEveTime)+
     rmCheck('tkMorn','Il giorno della scadenza alle',c.tkMorn,'tkMornTime',c.tkMornTime)+'</div>';
   h+='<div class="noteb" style="margin-top:12px"><button class="opill" data-act="calendar">Aggiungi gli impegni a Calendario</button><button class="opill" data-act="uncalendar">Rimuovi gli impegni da Calendario</button></div>';
@@ -1987,6 +1990,35 @@ function onHomeScreen(){
   }catch(e){}
   return false;
 }
+/* Notifiche ad app chiusa: incolla qui la chiave PUBBLICA (VAPID) generata con genera-chiavi.html */
+var PUSH_KEY='BH9DzL5G03kqz44v0dCyJLQEllhO2_xAQz4x11DeksaxHMq6u9UOhFQVjcbUVa1hU2Ws_b1xYIzJNeZ2UttbHSM';
+var pushSig='',pushT=null;
+async function pushSaveSub(o){
+  var s=sbGet();if(!s.uid)throw new Error('login');
+  await sbReq('/rest/v1/push_subs?endpoint=eq.'+encodeURIComponent(o.endpoint),{method:'DELETE'});
+  var r=await sbReq('/rest/v1/push_subs',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:s.uid,endpoint:o.endpoint,p256dh:o.p256dh,auth:o.auth})});
+  if(!r.ok)throw new Error('push '+r.status);
+}
+function pushSync(){clearTimeout(pushT);pushT=setTimeout(pushSyncNow,3000)}
+async function pushSyncNow(){
+  var s=sbGet();if(!PUSH_KEY||!s.uid||!s.at||!state.remind||!state.remind.on||!state.remind.push)return;
+  var plan=reminderPlan(),sig=JSON.stringify(plan.map(function(p){return [p.tag,p.when,p.title,p.body]}));
+  if(sig===pushSig)return;
+  try{
+    var d=await sbReq('/rest/v1/push_reminders?user_id=eq.'+s.uid+'&sent=eq.false',{method:'DELETE'});
+    if(!d.ok)return;
+    if(plan.length){
+      var r=await sbReq('/rest/v1/push_reminders?on_conflict=user_id,tag',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(plan.map(function(p){return {user_id:s.uid,tag:p.tag,fire_at:new Date(p.when).toISOString(),title:p.title,body:p.body,sent:false}}))});
+      if(!r.ok)return;
+    }
+    pushSig=sig;
+  }catch(e){}
+}
+async function pushClear(){
+  var s=sbGet();pushSig='';if(!s.uid)return;
+  try{var reg=await ensureNotifySw(),sub=reg&&reg.pushManager?await reg.pushManager.getSubscription():null;if(sub)await sbReq('/rest/v1/push_subs?endpoint=eq.'+encodeURIComponent(sub.endpoint),{method:'DELETE'})}catch(e){}
+  try{await sbReq('/rest/v1/push_reminders?user_id=eq.'+s.uid+'&sent=eq.false',{method:'DELETE'})}catch(e){}
+}
 function keyBytes(base64){
   var pad='='.repeat((4-base64.length%4)%4);
   var raw=atob((base64+pad).replace(/-/g,'+').replace(/_/g,'/'));
@@ -1995,16 +2027,16 @@ function keyBytes(base64){
   return out;
 }
 async function subscribePush(){
-  if(!opts.savePush||!opts.pushPublicKey)return false;
+  if(!PUSH_KEY||!sbGet().uid)return false;
   var reg=await ensureNotifySw();
   if(!reg||!reg.pushManager)return false;
-  var key=await opts.pushPublicKey();
+  var key=PUSH_KEY;
   if(!key)return false;
   var sub=await reg.pushManager.getSubscription();
   if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes(key)});
   var json=sub.toJSON();
   if(!json.endpoint||!json.keys||!json.keys.p256dh||!json.keys.auth)return false;
-  await opts.savePush({endpoint:json.endpoint,p256dh:json.keys.p256dh,auth:json.keys.auth});
+  await pushSaveSub({endpoint:json.endpoint,p256dh:json.keys.p256dh,auth:json.keys.auth});
   return true;
 }
 function ensureNotifySw(){
@@ -2045,6 +2077,20 @@ function reminderPlan(){
       if(whenM>now)out.push({tag:'tk-'+t.id+'-morn',when:whenM,title:'Oggi scade',body:t.title+(t.cls?' · '+t.cls:'')});
     }
   });
+  var cqs=(state.collq||[]).filter(function(q){return q.time&&inS(q)&&q.date>=iso(new Date())}),cMin=Number(c.colMin)||0;
+  cqs.forEach(function(q){
+    if(cMin<=0)return;
+    var w=atTime(q.date,q.time).getTime()-cMin*60000;
+    if(w>now){var sd=studById(q.sid);out.push({tag:'co-'+q.id+'-min',when:w,title:'Colloquio: '+(sd?sd.name:'alunno'),body:'Tra '+cMin+' minuti'+(q.end?' \u00b7 fino alle '+q.end:'')})}
+  });
+  if(c.colEve){
+    var byD={};cqs.forEach(function(q){(byD[q.date]=byD[q.date]||[]).push(q)});
+    Object.keys(byD).forEach(function(d){
+      var g=byD[d].sort(function(a,b){return String(a.time).localeCompare(String(b.time))}),f=g[0];
+      var b3=eveBefore(d,f.time,c.colEveTime),w3=atTime(d,f.time).getTime()-b3*60000;
+      if(w3>now){var en=g.map(function(q){return q.end||q.time}).sort().pop();out.push({tag:'co-'+d+'-eve',when:w3,title:'Domani: colloqui individuali',body:g.length+(g.length===1?' colloquio':' colloqui')+' \u00b7 dalle '+f.time+(en&&en>f.time?' alle '+en:'')})}
+    });
+  }
   out.sort(function(a,b){return a.when-b.when});
   return out.slice(0,40);
 }
@@ -2068,6 +2114,7 @@ function armReminders(){
   if(!state.remind||!state.remind.on)return;
   if(notifyPerm()!=='granted')return;
   var now=Date.now();
+  try{pushSync()}catch(e){}
   reminderPlan().forEach(function(item){
     var delay=item.when-now;
     if(delay<0||delay>2147483647)return;
@@ -2091,6 +2138,8 @@ async function enableNotify(permPromise){
   var n=reminderPlan().length;
   if(pushOk){
     flash=n?('Notifiche attive anche a app chiusa. Ho preparato '+n+(n===1?' avviso':' avvisi')+'.'):'Notifiche attive anche a app chiusa. Quando aggiungi un impegno, ti avviso.';
+  }else if(PUSH_KEY&&!sbGet().uid){
+    flash='Notifiche attive con l\'agenda aperta. Per riceverle anche da chiusa, accedi al tuo account e premi di nuovo Attiva.';
   }else if(!onHomeScreen()){
     flash='Notifiche attive con l\'agenda aperta. Su iPhone, per riceverle anche da chiusa, salva l\'icona sulla Home e riapri l\'app da lì.';
   }else{
@@ -2105,7 +2154,7 @@ function disableNotify(){
   notifyTimers=[];
   save();
   try{if(opts.clearPush)opts.clearPush()}catch(e){}
-  try{ensureNotifySw().then(function(reg){if(reg&&reg.pushManager)return reg.pushManager.getSubscription().then(function(sub){if(sub)return sub.unsubscribe()})})}catch(e){}
+  try{pushClear().finally(function(){return ensureNotifySw().then(function(reg){if(reg&&reg.pushManager)return reg.pushManager.getSubscription().then(function(sub){if(sub)return sub.unsubscribe()})})})}catch(e){}
   flash='Ho spento le notifiche.';render();
 }
 
