@@ -2422,16 +2422,20 @@ function openColl(id,sid,dt){
     '<div class="f"><label for="cl-stu">Alunno</label><select id="cl-stu" onchange="collSum()">'+(v.sid?'':'<option value="">Scegli\u2026</option>')+collStuOptions(v.sid)+'</select></div>'+
     '<p class="m" id="cl-sum" style="margin:0 0 10px">'+collSumHTML(v.sid)+'</p>'+
     '<div class="f"><label for="cl-date">Data</label><input id="cl-date" type="date" value="'+esc(v.date)+'"></div>'+
-    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="cl-time">Inizio (facoltativo)</label><input id="cl-time" type="time" onchange="collAutoEnd()" value="'+esc(v.time||'')+'"></div><div class="f" style="flex:1;min-width:0"><label for="cl-end">Fine (facoltativa)</label><input id="cl-end" type="time" onchange="this.dataset.auto=0" value="'+esc(v.end||'')+'"></div></div>'+
+    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="cl-time">Inizio (facoltativo)</label><input id="cl-time" type="time" onchange="collAutoEnd()" oninput="collAutoEnd()" onblur="collAutoEnd()" value="'+esc(v.time||'')+'"></div><div class="f" style="flex:1;min-width:0"><label for="cl-end">Fine (facoltativa)</label><input id="cl-end" type="time" onchange="this.dataset.auto=0" value="'+esc(v.end||'')+'"></div></div>'+
     '<div class="f"><label for="cl-prep">Cosa devo dire</label><textarea id="cl-prep" rows="3">'+esc(v.prep||'')+'</textarea></div>'+
     '<div class="f"><label for="cl-esito">Esito e cose da riprendere</label><textarea id="cl-esito" rows="3">'+esc(v.esito||'')+'</textarea></div>'+
     '<div class="sbtns"><button class="btn" data-act="collsave">Salva</button>'+(q?'<button class="btn ghost" data-act="colldel" data-id="'+q.id+'" style="color:#d62828">Elimina</button>':'')+'<button class="btn ghost" data-act="close">Annulla</button></div></div></div>';
   document.getElementById('sheet').innerHTML=h;document.body.style.overflow='hidden';
+  var cT=document.getElementById('cl-time'),cE=document.getElementById('cl-end'),cS=document.getElementById('cl-stu');
+  if(cT){['input','change','blur'].forEach(function(ev){cT.addEventListener(ev,collAutoEnd)})}
+  if(cE)cE.addEventListener('input',function(){this.dataset.auto='0'});
+  if(cS)cS.addEventListener('change',collSum);
 }
 function saveColl(){
   var sid=document.getElementById('cl-stu').value;
   if(!sid){document.getElementById('cl-sum').textContent='Scegli prima un alunno.';return}
-  var rec={sid:sid,school:state.school,date:document.getElementById('cl-date').value||iso(new Date()),time:document.getElementById('cl-time').value||'',end:document.getElementById('cl-end').value||'',prep:document.getElementById('cl-prep').value.trim(),esito:document.getElementById('cl-esito').value.trim()};
+  var rec={sid:sid,school:state.school,date:document.getElementById('cl-date').value||iso(new Date()),time:document.getElementById('cl-time').value||'',end:document.getElementById('cl-end').value||collEnd(document.getElementById('cl-time').value,10),prep:document.getElementById('cl-prep').value.trim(),esito:document.getElementById('cl-esito').value.trim()};
   state.collq=state.collq||[];
   var q=sheet&&sheet.id?state.collq.filter(function(x){return x.id===sheet.id})[0]:null;
   if(q)Object.assign(q,rec);else{rec.id=uid();state.collq.push(rec)}
@@ -2603,12 +2607,157 @@ function studOverview(s,c,gs,av,nn){
   h+=studTrend(s,gs);
   return h;
 }
+function studAbsDates(sid){var L=state.absLog||{},o={};Object.keys(L).forEach(function(d){if(L[d]&&L[d][sid])o[d]=1});try{if(absToday()[sid])o[state.dayAbs.date]=1}catch(e){}return Object.keys(o).sort()}
+function openStudPdf(sid){
+  sheet={kind:'studpdf',sid:sid};
+  var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Scheda in PDF"><h2>Scheda in PDF</h2><p class="m" style="margin:0 0 10px">Voti, grafici, assenze e materiale ci sono sempre. Scegli cos\u2019altro includere.</p>'+
+    '<div class="rmrow"><label class="rl"><input type="checkbox" id="sp-abs" checked><span>Date delle assenze</span></label></div>'+
+    '<div class="rmrow"><label class="rl"><input type="checkbox" id="sp-notes" checked><span>Annotazioni</span></label></div>'+
+    '<div class="rmrow"><label class="rl"><input type="checkbox" id="sp-coll"><span>Esiti dei colloqui</span></label></div>'+
+    '<div class="sbtns" style="margin-top:12px"><button type="button" class="btn" data-act="studpdfgo">Crea PDF</button><button type="button" class="btn ghost" data-act="close">Annulla</button></div></div></div>';
+  document.getElementById('sheet').innerHTML=h;document.body.style.overflow='hidden';
+}
+async function studPdfGo(){
+  var sid=sheet&&sheet.sid;if(!sid)return;
+  var g=function(id){var e=document.getElementById(id);return !!(e&&e.checked)};
+  var o={abs:g('sp-abs'),notes:g('sp-notes'),coll:g('sp-coll')};
+  closeSheet();
+  await exportStudPdf(sid,o);
+}
+async function exportStudPdf(sid,o){
+  var s=studById(sid);if(!s)return;o=o||{};
+  var c=clsById(s.cls),cs=c?curSubj(c):'';
+  var byD=function(a,b){return a.date.localeCompare(b.date)};
+  var gs=gradesOf(sid).sort(byD),av=avgOf(gs),ms=matsOf(sid).sort(byD);
+  var nn=state.snotes.filter(function(n){return n.student===sid}).sort(byD);
+  var abd=studAbsDates(sid),ss=c?studsOf(c.id):[],les=c?lastLessons(c,ss,9999).length:0;
+  var pc=les?Math.min(100,Math.round(abd.length*100/les)):null;
+  try{await loadScript(LIBS.jspdf)}catch(e){flash='Non sono riuscito a creare il PDF. Controlla la connessione e riprova.';render();return}
+  var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'});
+  var W=210,H=297,M=15,maxW=W-2*M,FOOT=12,y=M;
+  var BLUE=[35,64,168],INK=[21,29,59],SOFT=[228,234,251],MUTED=[90,100,130],LINE=[221,226,238],ZEBRA=[247,248,252],BAR=[37,99,235],RED=[214,40,40];
+  var need=function(h){if(y+h>H-M-FOOT){doc.addPage();y=M}};
+  var ink=function(){doc.setTextColor(INK[0],INK[1],INK[2])};
+  var sec=function(t){need(18);y+=4;doc.setFont('helvetica','bold');doc.setFontSize(12.5);ink();doc.text(t,M,y+5);y+=9};
+  var small=function(t){doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.splitTextToSize(t,maxW).forEach(function(l){need(5);doc.text(l,M,y+3);y+=4.2});ink()};
+  var dm=function(d){var p=d.split('-');return (+p[2])+'/'+(+p[1])};
+  /* intestazione */
+  var subTxt=[c?'Classe '+c.name:'',cs,schoolName(c?c.school:state.school),'Scheda del '+new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join(' \u00b7 ');
+  doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(M,y,maxW,26,5,5,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(19);doc.text(doc.splitTextToSize(s.name,maxW-14)[0],M+7,y+11);
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(214,224,252);doc.text(doc.splitTextToSize(subTxt,maxW-14)[0],M+7,y+19);
+  y+=32;ink();
+  /* riquadri di riepilogo */
+  var tw=(maxW-12)/4,tile=function(i,lab,val,sub,col){
+    var x=M+i*(tw+4);doc.setFillColor(255,255,255);doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.3);doc.roundedRect(x,y,tw,22,3,3,'FD');
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(lab,x+3.5,y+5.5);
+    doc.setFont('helvetica','bold');doc.setFontSize(16);if(col)doc.setTextColor(col[0],col[1],col[2]);else ink();doc.text(String(val),x+3.5,y+13.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(doc.splitTextToSize(sub,tw-5)[0]||'',x+3.5,y+19);ink()};
+  var mok=ms.filter(function(x){return x.value>0}).length;
+  tile(0,'Media',av!==null?fmtG(av):'\u2013',gs.length+(gs.length===1?' voto':' voti'),av!==null&&av<6?RED:null);
+  tile(1,'Assenze',abd.length,les?pc+'% su '+les+(les===1?' lezione':' lezioni'):'nessuna lezione',pc!==null&&abd.length&&pc>=20?RED:null);
+  tile(2,'Materiale',ms.length?mok+'/'+ms.length:'\u2013',ms.length?'portato':'nessuna verifica');
+  tile(3,'Annotazioni',nn.length,nn.length?'ultima '+shortDate(nn[nn.length-1].date):'nessuna');
+  y+=28;
+  /* andamento dei voti */
+  sec('Andamento dei voti');
+  if(!gs.length){small('Nessun voto per ora.')}
+  else{
+    var last=gs.slice(-20),n=last.length,run=[],t0=0;gs.forEach(function(g,i){t0+=g.value;run.push(t0/(i+1))});var ra=run.slice(-20);
+    var CH=46,LB=(n>8?13:7),cx0=M+8,cw=maxW-8,top=y+3,base=top+CH,slot=cw/n,bw=Math.min(10,slot*0.62);
+    need(CH+LB+12);top=y+3;base=top+CH;
+    var Y=function(v){return base-CH*Math.max(0,Math.min(10,v))/10},X=function(i){return cx0+slot*(i+0.5)};
+    doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.25);doc.line(cx0,Y(10),M+maxW,Y(10));doc.line(cx0,base,M+maxW,base);
+    doc.setLineDashPattern([1.6,1.4],0);doc.setDrawColor(MUTED[0],MUTED[1],MUTED[2]);doc.line(cx0,Y(6),M+maxW,Y(6));doc.setLineDashPattern([],0);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    doc.text('10',cx0-2,Y(10)+1.2,{align:'right'});doc.text('6',cx0-2,Y(6)+1.2,{align:'right'});doc.text('0',cx0-2,base+1.2,{align:'right'});
+    last.forEach(function(g,i){
+      var low=g.value<6,hh=Math.max(0.8,base-Y(g.value));
+      doc.setFillColor(low?RED[0]:BAR[0],low?RED[1]:BAR[1],low?RED[2]:BAR[2]);doc.roundedRect(X(i)-bw/2,base-hh,bw,hh,1,1,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);ink();if(n<=16)doc.text(String(fmtVoto(g.value)),X(i),base-hh-1.2,{align:'center'});
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+      var lb=dm(g.date);if(n>8)doc.text(lb,X(i)+1.2,base+2+doc.getTextWidth(lb),{angle:90});else doc.text(lb,X(i),base+4.5,{align:'center'});
+    });
+    if(n>1){doc.setDrawColor(40,47,74);doc.setLineWidth(0.55);for(var k=1;k<n;k++)doc.line(X(k-1),Y(ra[k-1]),X(k),Y(ra[k]));doc.setLineWidth(0.3)}
+    y=base+LB+4;ink();
+    small('Barre blu: voti da 6 in su \u00b7 rosse: voti sotto il 6 \u00b7 linea scura: media progressiva \u00b7 linea tratteggiata: il 6.');
+  }
+  /* assenze per mese */
+  sec('Giorni di assenza per mese');
+  var y0=curSchoolYear(),mo=[9,10,11,12,1,2,3,4,5,6],lab=['S','O','N','D','G','F','M','A','M','G'],cnt=mo.map(function(){return 0});
+  abd.forEach(function(d){var p=d.split('-'),yy=+p[0],mm=+p[1],ix=mo.indexOf(mm);if(ix<0)return;if((mm>=9?yy:yy-1)!==y0)return;cnt[ix]++});
+  var mx=Math.max(3,Math.max.apply(null,cnt)),AH=30;need(AH+14);
+  var ab0=y+6+AH,cwA=maxW/10;
+  cnt.forEach(function(v,i){
+    var cx=M+cwA*i+cwA/2;
+    if(v>0){var bh=AH*v/mx;doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(cx-5,ab0-bh,10,bh,1,1,'F');doc.setFont('helvetica','bold');doc.setFontSize(8.5);ink();doc.text(String(v),cx,ab0-bh-1.2,{align:'center'})}
+    else{doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.8);doc.line(cx-4,ab0-0.4,cx+4,ab0-0.4);doc.setLineWidth(0.3)}
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(lab[i],cx,ab0+5,{align:'center'});
+  });
+  y=ab0+9;ink();
+  if(o.abs&&abd.length){small('Date delle assenze: '+abd.map(dm).join(', ')+'.')}
+  /* voti */
+  if(gs.length){
+    sec('Voti');
+    var cols=[[22,'Data'],[40,'Tipo'],[98,'Descrizione'],[20,'Voto']];
+    var head=function(){need(14);doc.setFillColor(SOFT[0],SOFT[1],SOFT[2]);doc.roundedRect(M,y,maxW,8,3,3,'F');doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]);var hx=M;cols.forEach(function(k){doc.text(k[1],hx+2.5,y+5.4);hx+=k[0]});y+=10;doc.setFont('helvetica','normal');ink()};
+    head();
+    gs.forEach(function(g,ri){
+      if(y+8>H-M-FOOT){doc.addPage();y=M;head()}
+      if(ri%2===0){doc.setFillColor(ZEBRA[0],ZEBRA[1],ZEBRA[2]);doc.roundedRect(M,y-1,maxW,7.4,2,2,'F')}
+      doc.setFontSize(9);var rx=M;
+      [shortDate(g.date),TIPI_VOTO[g.type]||'',g.desc||'',String(fmtVoto(g.value))].forEach(function(t,i){
+        var parts=doc.splitTextToSize(String(t),cols[i][0]-3),tx=parts[0]||'';if(parts.length>1)tx=tx.replace(/\s+$/,'')+'\u2026';
+        if(i===3){doc.setFont('helvetica','bold');if(g.value<6)doc.setTextColor(RED[0],RED[1],RED[2])}
+        doc.text(tx,rx+2.5,y+3.9);doc.setFont('helvetica','normal');ink();rx+=cols[i][0]});
+      y+=7.4;
+    });
+  }
+  /* materiale */
+  if(ms.length){
+    sec('Materiale');
+    var no=ms.filter(function(x){return !(x.value>0)}).map(function(x){return dm(x.date)});
+    small('Portato '+mok+' volte su '+ms.length+(no.length?'. Non portato il: '+no.join(', ')+'.':'.'));
+  }
+  /* annotazioni */
+  if(o.notes&&nn.length){
+    sec('Annotazioni');
+    nn.forEach(function(nt){
+      var lines=doc.splitTextToSize(nt.text||'',maxW-8),h=9+lines.length*4.5;
+      need(Math.min(h,40)+3);
+      doc.setFont('helvetica','bold');doc.setFontSize(9.5);ink();doc.text(shortDate(nt.date),M,y+4);y+=6.5;
+      doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.setTextColor(60,68,96);
+      lines.forEach(function(l){need(5);doc.text(l,M+4,y+3);y+=4.5});y+=3;ink();
+    });
+  }
+  /* colloqui */
+  if(o.coll){
+    var cq=(state.collq||[]).filter(function(q){return q.sid===sid&&String(q.esito||'').trim()}).sort(byD);
+    if(cq.length){
+      sec('Colloqui');
+      cq.forEach(function(q){
+        var lines=doc.splitTextToSize(String(q.esito),maxW-8);need(Math.min(9+lines.length*4.5,40)+3);
+        doc.setFont('helvetica','bold');doc.setFontSize(9.5);ink();doc.text(shortDate(q.date),M,y+4);y+=6.5;
+        doc.setFont('helvetica','normal');doc.setTextColor(60,68,96);lines.forEach(function(l){need(5);doc.text(l,M+4,y+3);y+=4.5});y+=3;ink();
+      });
+    }
+  }
+  /* pi\u00e8 di pagina */
+  var np=doc.getNumberOfPages();
+  for(var pg=1;pg<=np;pg++){doc.setPage(pg);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.3);doc.line(M,H-M-5,W-M,H-M-5);
+    doc.text('Agenda docente \u00b7 '+s.name,M,H-M);doc.text('Pagina '+pg+' di '+np,W-M,H-M,{align:'right'})}
+  var file='scheda-'+pdfSlug(s.name)+'.pdf';
+  var res=await saveFile(doc.output('blob'),file,function(){doc.save(file)});
+  if(res==='saved'){flash='PDF pronto: '+file;render()}
+}
+
 var studFrom='';
 function vStud(){
   var s=studById(selStud);var c=clsById(s.cls);
   var gs=gradesOf(s.id).sort(function(a,b){return b.date.localeCompare(a.date)});var av=avgOf(gs);
   var nn=state.snotes.filter(function(n){return n.student===s.id}).sort(function(a,b){return b.date.localeCompare(a.date)});
-  var h=backLink(studFrom==='coll'?'coll':'classe',studFrom==='coll'?'Colloqui individuali':(c?c.name:'Classe'))+'<h1>'+esc(s.name)+'</h1><p class="sub">'+(c?'Classe '+esc(c.name)+', ':'')+gs.length+(gs.length===1?' voto':' voti')+(av!==null?', media '+fmtG(av):'')+(function(){var ms=matsOf(s.id);return ms.length?', materiale '+ms.filter(function(x){return x.value>0}).length+'/'+ms.length:''})()+(nn.length?', '+nn.length+(nn.length===1?' annotazione':' annotazioni'):'')+(absCount(s.id)?', '+absCount(s.id)+(absCount(s.id)===1?' assenza':' assenze'):'')+'</p>';
+  var h=backLink(studFrom==='coll'?'coll':'classe',studFrom==='coll'?'Colloqui individuali':(c?c.name:'Classe'))+'<div class="h1row"><h1 class="h1t">'+esc(s.name)+'</h1><button type="button" class="opill" data-act="studpdf" data-id="'+s.id+'" aria-label="Scheda alunno in PDF">'+ic('download',18)+'PDF</button></div><p class="sub">'+(c?'Classe '+esc(c.name)+', ':'')+gs.length+(gs.length===1?' voto':' voti')+(av!==null?', media '+fmtG(av):'')+(function(){var ms=matsOf(s.id);return ms.length?', materiale '+ms.filter(function(x){return x.value>0}).length+'/'+ms.length:''})()+(nn.length?', '+nn.length+(nn.length===1?' annotazione':' annotazioni'):'')+(absCount(s.id)?', '+absCount(s.id)+(absCount(s.id)===1?' assenza':' assenze'):'')+'</p>';
   if(s.tags&&s.tags.length)h+='<div style="margin-top:6px">'+tagChips(s)+'</div>';
   h+='<div class="noteb" style="margin-top:12px"><button class="opill pri" data-act="fab">'+ic('plus',18)+'Aggiungi voto</button><button class="opill" data-act="addsnote">'+ic('note',18)+'Aggiungi annotazione</button><button class="opill" data-act="edit" data-kind="student" data-id="'+s.id+'">'+ic('edit',18)+'Modifica alunno</button><button class="opill" data-act="colledit" data-sid="'+s.id+'">'+ic('chat',18)+'Prepara colloquio</button></div>';
   h+=studOverview(s,c,gs,av,nn);
@@ -5434,7 +5583,7 @@ async function onAgendaClick(e){
   else if(a==='archshare')shareArchiveFile();
   else if(a==='ocr')await runOcr(el.dataset.id);
   else if(a==='pdforario')await exportOrarioPdf();else if(a==='pdfmonth')await exportMonthPdf();
-  else if(a==='pdfclass')await exportLessonsPdf();
+  else if(a==='studpdf')openStudPdf(el.dataset.id);else if(a==='studpdfgo')await studPdfGo();else if(a==='pdfclass')await exportLessonsPdf();
   else if(a==='pdfpick')openPdfPick();
   else if(a==='clslessons'){selCls=el.dataset.id;cur='lezcls';render();resetScroll()}
   else if(a==='lezedit')openLogEdit(el.dataset.id);
