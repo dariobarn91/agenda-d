@@ -2752,6 +2752,134 @@ async function exportStudPdf(sid,o){
   if(res==='saved'){flash='PDF pronto: '+file;render()}
 }
 
+function councilDefaults(){var y=curSchoolYear(),y1=y+1;return {yr:y,type:'quad',quad:[[y+'-09-01',y1+'-01-31'],[y1+'-02-01',y1+'-06-30']],trim:[[y+'-09-01',y+'-12-20'],[y+'-12-21',y1+'-03-20'],[y1+'-03-21',y1+'-06-30']],avg:6,abs:20}}
+function councilCfg(){var d=councilDefaults(),c=state.council;if(!c||c.yr!==d.yr)return d;return {yr:d.yr,type:c.type||d.type,quad:c.quad||d.quad,trim:c.trim||d.trim,avg:c.avg||d.avg,abs:c.abs||d.abs}}
+function councilNames(type){return type==='trim'?['1\u00b0 trimestre','2\u00b0 trimestre','3\u00b0 trimestre']:['1\u00b0 quadrimestre','2\u00b0 quadrimestre']}
+function councilPeriods(cf,type){
+  type=type||cf.type;var list=cf[type],names=councilNames(type);
+  document.getElementById('cn-periods').innerHTML=list.map(function(p,i){return '<div class="f"><label>'+names[i]+'</label><div style="display:flex;gap:10px"><input id="cn-f'+i+'" type="date" value="'+p[0]+'" aria-label="'+names[i]+', dal" style="flex:1;min-width:0"><input id="cn-t'+i+'" type="date" value="'+p[1]+'" aria-label="'+names[i]+', al" style="flex:1;min-width:0"></div></div>'}).join('');
+  document.getElementById('cn-pick').innerHTML='<option value="all">Tutto l\u2019anno</option>'+names.map(function(n,i){return '<option value="'+i+'">'+n+'</option>'}).join('');
+}
+function openCouncil(cid){
+  var cf=councilCfg();sheet={kind:'council',cls:cid};
+  var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Consiglio di classe"><h2>Consiglio di classe</h2>'+
+    '<div class="f"><label for="cn-type">Divisione dell\u2019anno</label><select id="cn-type"><option value="quad">Due quadrimestri</option><option value="trim">Tre trimestri</option></select></div>'+
+    '<div id="cn-periods"></div>'+
+    '<div class="f"><label for="cn-pick">Periodo da stampare</label><select id="cn-pick"></select></div>'+
+    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="cn-avg">Segnala media sotto</label><input id="cn-avg" type="number" step="0.5" min="1" max="10" inputmode="decimal" value="'+cf.avg+'"></div>'+
+    '<div class="f" style="flex:1;min-width:0"><label for="cn-abs">Segnala assenze dal (%)</label><input id="cn-abs" type="number" step="1" min="1" max="100" inputmode="numeric" value="'+cf.abs+'"></div></div>'+
+    '<div class="rmrow"><label class="rl"><input type="checkbox" id="cn-notes"><span>Includi le annotazioni</span></label></div>'+
+    '<p class="m" id="cn-err" style="margin:6px 0 0;color:#d62828"></p>'+
+    '<div class="sbtns" style="margin-top:12px"><button type="button" class="btn" data-act="councilgo">Crea PDF</button><button type="button" class="btn ghost" data-act="close">Annulla</button></div></div></div>';
+  document.getElementById('sheet').innerHTML=h;document.body.style.overflow='hidden';
+  document.getElementById('cn-type').value=cf.type;councilPeriods(cf);
+  document.getElementById('cn-type').addEventListener('change',function(){councilPeriods(councilCfg(),this.value)});
+}
+async function councilGo(){
+  var cid=sheet&&sheet.cls;if(!cid)return;
+  var $=function(id){return document.getElementById(id)},err=function(t){$('cn-err').textContent=t};
+  var type=$('cn-type').value,names=councilNames(type),list=[];
+  for(var i=0;i<names.length;i++){var f=$('cn-f'+i).value,t=$('cn-t'+i).value;if(!f||!t){err('Compila le date di '+names[i]+'.');return}if(f>t){err('In '+names[i]+' la data di inizio \u00e8 dopo quella di fine.');return}list.push([f,t])}
+  var avg=parseFloat(String($('cn-avg').value).replace(',','.')),abs=parseFloat(String($('cn-abs').value).replace(',','.'));
+  if(!(avg>=1&&avg<=10)){err('La soglia della media deve essere tra 1 e 10.');return}
+  if(!(abs>=1&&abs<=100)){err('La soglia delle assenze deve essere tra 1 e 100.');return}
+  var cf=councilCfg();cf.type=type;cf[type]=list;cf.avg=avg;cf.abs=abs;state.council=cf;save();
+  var pk=$('cn-pick').value,from,to,label;
+  if(pk==='all'){from='0000-00-00';to='9999-99-99';label='Tutto l\u2019anno'}
+  else{var p=list[+pk];from=p[0];to=p[1];label=names[+pk]+' ('+shortDate(from)+' \u2013 '+shortDate(to)+')'}
+  var notes=!!$('cn-notes').checked;closeSheet();
+  await exportCouncilPdf(cid,{from:from,to:to,label:label,avg:avg,abs:abs,notes:notes});
+}
+async function exportCouncilPdf(cid,o){
+  var c=clsById(cid);if(!c)return;
+  var ss=studsOf(cid);if(!ss.length){flash='Non ci sono ancora alunni in questa classe.';render();return}
+  var cs=curSubj(c),inP=function(d){return d>=o.from&&d<=o.to};
+  var les=lastLessons(c,ss,9999).filter(function(x){return inP(x.date)}).length;
+  var rows=ss.map(function(st){
+    var gs=gradesOf(st.id).filter(function(g){return inP(g.date)}),av=avgOf(gs);
+    var ms=matsOf(st.id).filter(function(g){return inP(g.date)}),mok=ms.filter(function(x){return x.value>0}).length;
+    var ab=studAbsDates(st.id).filter(inP).length,pc=les?Math.min(100,Math.round(ab*100/les)):null,fl=[];
+    if(av===null)fl.push('Nessun voto');else if(av<o.avg)fl.push('Media insufficiente');
+    if(pc!==null&&ab>0&&pc>=o.abs)fl.push('Assenze elevate');
+    return {st:st,gs:gs,av:av,ms:ms,mok:mok,ab:ab,pc:pc,fl:fl};
+  });
+  var allG=[],mT=0,mO=0,abT=0;rows.forEach(function(r){allG=allG.concat(r.gs);mT+=r.ms.length;mO+=r.mok;abT+=r.ab});
+  var cAv=avgOf(allG),nIns=rows.filter(function(r){return r.av!==null&&r.av<o.avg}).length,cPc=les?Math.min(100,Math.round(abT*100/(les*rows.length))):null;
+  try{await loadScript(LIBS.jspdf)}catch(e){flash='Non sono riuscito a creare il PDF. Controlla la connessione e riprova.';render();return}
+  var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'});
+  var W=210,H=297,M=15,maxW=W-2*M,FOOT=12,y=M;
+  var BLUE=[35,64,168],INK=[21,29,59],SOFT=[228,234,251],MUTED=[90,100,130],LINE=[221,226,238],ZEBRA=[247,248,252],BAR=[37,99,235],RED=[214,40,40];
+  var need=function(h){if(y+h>H-M-FOOT){doc.addPage();y=M}};
+  var ink=function(){doc.setTextColor(INK[0],INK[1],INK[2])};
+  var sec=function(t){need(18);y+=4;doc.setFont('helvetica','bold');doc.setFontSize(12.5);ink();doc.text(t,M,y+5);y+=9};
+  var small=function(t){doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.splitTextToSize(t,maxW).forEach(function(l){need(5);doc.text(l,M,y+3);y+=4.2});ink()};
+  var line=function(lab,txt){var l=doc.splitTextToSize(lab+' '+txt,maxW-4);doc.setFontSize(9.5);l.forEach(function(s,i){need(5.4);if(i===0){doc.setFont('helvetica','bold');doc.text(lab,M+2,y+3.6);var w=doc.getTextWidth(lab+' ');doc.setFont('helvetica','normal');doc.text(s.slice(lab.length+1),M+2+w,y+3.6)}else{doc.setFont('helvetica','normal');doc.text(s,M+2,y+3.6)}y+=5})};
+  var subTxt=[ 'Classe '+c.name,cs,schoolName(c.school),o.label,'Del '+new Date().toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'})].filter(Boolean).join(' \u00b7 ');
+  doc.setFillColor(BLUE[0],BLUE[1],BLUE[2]);doc.roundedRect(M,y,maxW,26,5,5,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(19);doc.text('Consiglio di classe '+c.name,M+7,y+11);
+  doc.setFont('helvetica','normal');doc.setFontSize(8.8);doc.setTextColor(214,224,252);doc.text(doc.splitTextToSize(subTxt,maxW-14)[0],M+7,y+19);
+  y+=32;ink();
+  var tw=(maxW-12)/4,tile=function(i,lab,val,sub,col){
+    var x=M+i*(tw+4);doc.setFillColor(255,255,255);doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.3);doc.roundedRect(x,y,tw,22,3,3,'FD');
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(lab,x+3.5,y+5.5);
+    doc.setFont('helvetica','bold');doc.setFontSize(16);if(col)doc.setTextColor(col[0],col[1],col[2]);else ink();doc.text(String(val),x+3.5,y+13.5);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(doc.splitTextToSize(sub,tw-5)[0]||'',x+3.5,y+19);ink()};
+  tile(0,'Media della classe',cAv!==null?fmtG(cAv):'\u2013',allG.length+(allG.length===1?' voto':' voti'),cAv!==null&&cAv<o.avg?RED:null);
+  tile(1,'Sotto soglia',nIns,'su '+rows.length+' alunni',nIns?RED:null);
+  tile(2,'Assenze',cPc!==null?cPc+'%':'\u2013',les?'su '+les+(les===1?' lezione':' lezioni'):'nessuna lezione');
+  tile(3,'Materiale',mT?mO+'/'+mT:'\u2013',mT?'portato':'nessuna verifica');
+  y+=28;
+  sec('Distribuzione dei voti');
+  if(!allG.length){small('Nessun voto nel periodo scelto.')}
+  else{
+    var cnt=[0,0,0,0,0,0,0,0,0,0];allG.forEach(function(g){var k=Math.max(1,Math.min(10,Math.round(g.value)));cnt[k-1]++});
+    var mx=Math.max(3,Math.max.apply(null,cnt)),CH=30;need(CH+16);var base=y+6+CH,cw=maxW/10;
+    cnt.forEach(function(v,i){var cx=M+cw*i+cw/2,low=(i+1)<6;
+      if(v>0){var bh=CH*v/mx;doc.setFillColor(low?RED[0]:BAR[0],low?RED[1]:BAR[1],low?RED[2]:BAR[2]);doc.roundedRect(cx-6,base-bh,12,bh,1,1,'F');doc.setFont('helvetica','bold');doc.setFontSize(8.5);ink();doc.text(String(v),cx,base-bh-1.2,{align:'center'})}
+      else{doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.8);doc.line(cx-4,base-0.4,cx+4,base-0.4);doc.setLineWidth(0.3)}
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(String(i+1),cx,base+5,{align:'center'})});
+    y=base+9;ink();small('Numero di voti per ogni valore (i voti con la virgola sono arrotondati all\u2019intero). In rosso i voti sotto il 6.');
+  }
+  sec('Alunni');
+  var cols=[[8,'N.'],[50,'Alunno'],[16,'Media'],[13,'Voti'],[26,'Assenze'],[20,'Materiale'],[47,'Segnalazioni']];
+  var head=function(){need(14);doc.setFillColor(SOFT[0],SOFT[1],SOFT[2]);doc.roundedRect(M,y,maxW,8,3,3,'F');doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(BLUE[0],BLUE[1],BLUE[2]);var hx=M;cols.forEach(function(k){doc.text(k[1],hx+2.2,y+5.4);hx+=k[0]});y+=10;doc.setFont('helvetica','normal');ink()};
+  head();
+  rows.forEach(function(r,ri){
+    var fl=r.fl.length?doc.splitTextToSize(r.fl.join(' \u00b7 '),cols[6][0]-3):[''],rh=7.4+(fl.length-1)*3.6;
+    if(y+rh>H-M-FOOT){doc.addPage();y=M;head()}
+    if(ri%2===0){doc.setFillColor(ZEBRA[0],ZEBRA[1],ZEBRA[2]);doc.roundedRect(M,y-1,maxW,rh,2,2,'F')}
+    var low=r.av!==null&&r.av<o.avg,hiA=r.pc!==null&&r.ab>0&&r.pc>=o.abs;
+    var cells=[String(ri+1),doc.splitTextToSize(r.st.name,cols[1][0]-3)[0],r.av!==null?fmtG(r.av):'\u2013',String(r.gs.length),r.ab?r.ab+(r.pc!==null?' ('+r.pc+'%)':''):'0',r.ms.length?r.mok+'/'+r.ms.length:'\u2013'];
+    var rx=M;doc.setFontSize(9);
+    cells.forEach(function(t,i){var bad=(i===2&&low)||(i===4&&hiA);doc.setFont('helvetica',bad?'bold':'normal');if(bad)doc.setTextColor(RED[0],RED[1],RED[2]);else ink();doc.text(t,rx+2.2,y+3.9);rx+=cols[i][0]});
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(RED[0],RED[1],RED[2]);fl.forEach(function(t,k){doc.text(t,rx+2.2,y+3.7+k*3.6)});ink();
+    y+=rh;
+  });
+  y+=2;
+  var lo=rows.filter(function(r){return r.av!==null&&r.av<o.avg}),hi=rows.filter(function(r){return r.pc!==null&&r.ab>0&&r.pc>=o.abs}),nv=rows.filter(function(r){return r.av===null});
+  sec('Da segnalare');
+  if(!lo.length&&!hi.length&&!nv.length)small('Nessuna segnalazione con le soglie scelte.');
+  if(lo.length)line('Media sotto il '+fmtG(o.avg)+':',lo.map(function(r){return r.st.name+' ('+fmtG(r.av)+')'}).join(', ')+'.');
+  if(hi.length)line('Assenze dal '+o.abs+'%:',hi.map(function(r){return r.st.name+' ('+r.pc+'%)'}).join(', ')+'.');
+  if(nv.length)line('Nessun voto nel periodo:',nv.map(function(r){return r.st.name}).join(', ')+'.');
+  if(o.notes){
+    var any=false;rows.forEach(function(r){
+      var nn=state.snotes.filter(function(n){return n.student===r.st.id&&inP(n.date)}).sort(function(a,b){return a.date.localeCompare(b.date)});if(!nn.length)return;
+      if(!any){sec('Annotazioni');any=true}
+      need(12);doc.setFont('helvetica','bold');doc.setFontSize(9.5);ink();doc.text(r.st.name,M,y+4);y+=6;
+      nn.forEach(function(nt){var ls=doc.splitTextToSize(shortDate(nt.date)+': '+(nt.text||''),maxW-6);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,68,96);ls.forEach(function(l){need(4.6);doc.text(l,M+3,y+3);y+=4.3});y+=1;ink()});
+      y+=2;
+    });
+  }
+  var np=doc.getNumberOfPages();
+  for(var pg=1;pg<=np;pg++){doc.setPage(pg);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.3);doc.line(M,H-M-5,W-M,H-M-5);
+    doc.text('Agenda docente \u00b7 Consiglio di classe '+c.name,M,H-M);doc.text('Pagina '+pg+' di '+np,W-M,H-M,{align:'right'})}
+  var file='consiglio-'+pdfSlug(c.name)+(cs?'-'+pdfSlug(cs):'')+'-'+pdfSlug(o.label.split(' (')[0])+'.pdf';
+  var res=await saveFile(doc.output('blob'),file,function(){doc.save(file)});
+  if(res==='saved'){flash='PDF pronto: '+file;render()}
+}
+
 var studFrom='';
 function vStud(){
   var s=studById(selStud);var c=clsById(s.cls);
@@ -4624,11 +4752,11 @@ async function exportClassPdf(cid,what){
     }
   }catch(err){flash='Non sono riuscito a creare il PDF. Controlla la connessione e riprova.';render()}
 }
-var EXP_HINT={lezioni:'Elenco delle lezioni svolte: data, materia, argomento e note.',materiale:'Tabella con chi aveva il materiale (sì o no) in ogni verifica di materiale.',voti:'Elenco degli alunni con i voti e la media.'};
+var EXP_HINT={lezioni:'Elenco delle lezioni svolte: data, materia, argomento e note.',materiale:'Tabella con chi aveva il materiale (sì o no) in ogni verifica di materiale.',voti:'Elenco degli alunni con i voti e la media.',consiglio:'Quadro della classe per i consigli: medie, assenze, materiale e segnalazioni. Poi scegli il periodo.'};
 function openExport(cid){
   sheet={kind:'exportcls',cls:cid};
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Esporta in PDF"><h2>Esporta in PDF</h2><div class="form">'+
-    fieldHTML({k:'what',l:'Cosa vuoi esportare?',t:'select',o:{lezioni:'Lezioni',materiale:'Materiale',voti:'Voti'}},'lezioni')+
+    fieldHTML({k:'what',l:'Cosa vuoi esportare?',t:'select',o:{lezioni:'Lezioni',materiale:'Materiale',voti:'Voti',consiglio:'Consiglio di classe'}},'lezioni')+
     '</div><p class="m" id="exp-hint" style="margin:6px 0 0">'+EXP_HINT.lezioni+'</p>'+
     '<div class="sbtns" style="margin-top:14px"><button class="btn" data-act="doexport">Crea PDF</button><button class="btn ghost" data-act="close">Annulla</button></div></div></div>';
   document.getElementById('sheet').innerHTML=h;
@@ -5583,7 +5711,7 @@ async function onAgendaClick(e){
   else if(a==='archshare')shareArchiveFile();
   else if(a==='ocr')await runOcr(el.dataset.id);
   else if(a==='pdforario')await exportOrarioPdf();else if(a==='pdfmonth')await exportMonthPdf();
-  else if(a==='studpdf')openStudPdf(el.dataset.id);else if(a==='studpdfgo')await studPdfGo();else if(a==='pdfclass')await exportLessonsPdf();
+  else if(a==='councilgo')await councilGo();else if(a==='studpdf')openStudPdf(el.dataset.id);else if(a==='studpdfgo')await studPdfGo();else if(a==='pdfclass')await exportLessonsPdf();
   else if(a==='pdfpick')openPdfPick();
   else if(a==='clslessons'){selCls=el.dataset.id;cur='lezcls';render();resetScroll()}
   else if(a==='lezedit')openLogEdit(el.dataset.id);
@@ -5603,7 +5731,7 @@ async function onAgendaClick(e){
   else if(a==='saveseds')saveStudsEdit();
   else if(a==='pdfdo'){var pc=el.dataset.cls;closeSheet();await exportLessonsPdf(pc)}
   else if(a==='pdfregistro')openExport(selCls);
-  else if(a==='doexport'){var wsel=document.getElementById('f-what');var wv=wsel?wsel.value:'lezioni';var ecid=sheet&&sheet.cls;closeSheet();await exportClassPdf(ecid,wv)}
+  else if(a==='doexport'){var wsel=document.getElementById('f-what');var wv=wsel?wsel.value:'lezioni';var ecid=sheet&&sheet.cls;closeSheet();if(wv==='consiglio'){openCouncil(ecid);return}await exportClassPdf(ecid,wv)}
   else if(a==='ocrevents')ocrToEvents();
   else if(a==='ocrtask')ocrToTask();
   else if(a==='cancelclear'){pendingClearCal=null;render()}
