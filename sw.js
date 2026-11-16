@@ -1,5 +1,5 @@
 /* Agenda docente - service worker: uso offline e notifiche locali */
-const VERSION = 'ad-v3';
+const VERSION = 'ad-v4';
 const CORE = ['/', '/index.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 const EXTERNAL_OK = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com', 'tessdata.projectnaptha.com'];
 
