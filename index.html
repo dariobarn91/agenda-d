@@ -223,7 +223,7 @@ html.alk-veil body::after{content:"";position:fixed;inset:0;background:var(--pap
 #applock .alk-k button:active{background:var(--blue-bg)}
 #applock .alk-k button.alk-x{background:none;box-shadow:none;color:var(--blue)}
 #applock .alk-k button[disabled]{opacity:.4}
-#applock .alk-f{margin-top:20px;border:0;background:var(--blue-bg);color:var(--blue);font:700 16px var(--font-ui,system-ui,sans-serif);border-radius:14px;padding:12px 20px;cursor:pointer;display:none;align-items:center;gap:8px}
+#applock .alk-f{margin-top:20px;border:0;background:var(--blue);color:var(--on-blue);font:700 16px var(--font-ui,system-ui,sans-serif);border-radius:14px;padding:12px 20px;cursor:pointer;display:none;align-items:center;gap:8px}
 #applock .alk-f.on{display:inline-flex}
 #applock .alk-l{margin-top:14px;border:0;background:none;color:var(--ink2);font:700 14px var(--font-ui,system-ui,sans-serif);cursor:pointer;padding:8px}
 #alk-dlg{position:fixed;inset:0;z-index:2500;background:rgba(10,16,40,.45);display:flex;align-items:center;justify-content:center;padding:18px;font-family:var(--font-ui,system-ui,sans-serif)}
@@ -308,7 +308,7 @@ function showLock(){
   ov.innerHTML='<div class="alk-i">'+LOCK_SVG+'</div><h1>Agenda docente</h1><p class="alk-s">Inserisci il PIN per entrare</p><div class="alk-d" aria-hidden="true">'+dots()+'</div><div class="alk-k">'+k+'</div><button type="button" class="alk-f" data-k="bio">'+FACE_SVG+'Usa Face ID / Touch ID</button><button type="button" class="alk-l" data-k="forgot">PIN dimenticato?</button>';
   document.body.appendChild(ov);
   ov.addEventListener('click',onLockClick);
-  if(o.bio){bioSupported().then(function(ok){if(ok&&ov){ov.querySelector('.alk-f').classList.add('on');tryBio(true)}})}
+  if(o.bio){bioSupported().then(function(ok){if(ok&&ov){ov.querySelector('.alk-f').classList.add('on')}})}
   checkWait();
 }
 function hideLock(){
@@ -470,8 +470,8 @@ document.addEventListener('click',function(e){
   if(enabled())viewOn();else viewOff();
 },true);
 window.AgendaLock={enabled:enabled,label:function(){var o=get();return o?('Attivo'+(o.bio?' · PIN e Face ID':' · PIN')):'Non attivo'}};
-/* all’avvio: se il blocco è attivo, copro subito l’agenda */
-if(enabled()){root.classList.add('alk-on');showLock()}
+/* all’avvio: se il blocco è attivo, applico subito il tema scelto nell’app (altrimenti, con il telefono in scuro e l’app in chiaro, la barra in alto resta scura) e copro l’agenda */
+if(enabled()){try{var st0=JSON.parse(localStorage.getItem('agenda-docente.v3')),th0=st0&&st0.theme;if(th0==='light'||th0==='dark')root.setAttribute('data-theme',th0)}catch(e){}root.classList.add('alk-on');showLock()}
 })();
 </script>
 <main id="app"><div id="view"><div class="sbar"><span class="schoolb"><span class="sn">La mia scuola</span></span></div><h1>Agenda docente</h1><p class="sub">Se resti su questa frase, tocca Condividi e poi Safari. L’anteprima di File non avvia l’agenda.</p></div></main>
