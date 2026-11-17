@@ -203,7 +203,7 @@ button.h1chev{border:0;outline:0;margin:0;cursor:pointer;-webkit-tap-highlight-c
 .calsj{display:flex;align-items:center;gap:10px;margin:10px 0 4px}.calsjn{font:800 26px var(--font-head);color:var(--ink)}
 .curcard .cc-t .cc-ann{display:inline-block;margin:0 0 0 10px;padding:3px 10px;vertical-align:middle;font-size:13px;white-space:nowrap;background:var(--green-bg);color:var(--green)}.curcard .cc-top{flex-wrap:wrap;row-gap:8px}.curcard .cc-top .cc-chips{flex:0 0 100%;order:3;display:flex;flex-wrap:wrap;gap:6px}.curcard .cc-top .cc-chips .cc-ann{margin:0;padding:3px 10px;font-size:12.5px}
 .lezchips{margin:6px 0 12px}
-</style><style id="offdays">.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style></head>
+</style><style id="offdays">.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.half{background:linear-gradient(135deg,var(--line) 50%,transparent 50%)}.day.half.today{background:linear-gradient(135deg,#7f8fd0 50%,var(--blue) 50%)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style></head>
 <body onload="avviaAgenda()">
 <main id="app"><div id="view"><div class="sbar"><span class="schoolb"><span class="sn">La mia scuola</span></span></div><h1>Agenda docente</h1><p class="sub">Se resti su questa frase, tocca Condividi e poi Safari. L’anteprima di File non avvia l’agenda.</p></div></main>
 <button class="fab" id="fab" data-act="fab" aria-label="Aggiungi"></button>
@@ -1196,7 +1196,7 @@ function syncSubjSel(clsId,subjId){
   var tmp=document.createElement('div');tmp.innerHTML=h;si.replaceWith(tmp.firstChild);
 }
 document.addEventListener('input',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject')});
-document.addEventListener('change',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='lg-cls')syncSubjSel('lg-cls','lg-subj');else if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject');else if(t.id==='ys-y'&&sheet.kind==='year')openYear(+t.value);else if(t.id==='cl-done')collDoneTog()});
+document.addEventListener('change',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='lg-cls')syncSubjSel('lg-cls','lg-subj');else if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject');else if(t.id==='ys-y'&&sheet.kind==='year')openYear(+t.value);else if(t.id==='cl-done')collDoneTog();else if(t.id==='of-type')offTypeTog()});
 function adoptSubj(cid,subj){var c=clsById(cid);if(!c||!subj||clsSubjList(c).indexOf(subj)<0)return;var u=ui();u.csubj=u.csubj||{};if(u.csubj[cid]!==subj){u.csubj[cid]=subj;save()}}
 function teamsEx(id){return !!(absToday()[id]||(sheet&&sheet.skip&&sheet.skip[id]))}
 function mdk(cid){var c=clsById(cid);return cid+'|'+(c?curSubj(c):'')}
@@ -1298,7 +1298,7 @@ function schoolYearOf(d){var y=+d.slice(0,4),m=+d.slice(5,7);return m>=9?y:y-1}
 function yearRange(y0){var r=(state.years||{})[y0]||{};return {start:r.start||(y0+'-09-01'),end:r.end||((y0+1)+'-06-30'),custom:!!(r.start||r.end)}}
 function yearLabel(y0){return y0+'/'+String(y0+1).slice(2)}
 function dmShort(s){var d=parse(s);return d.getDate()+' '+MESI3[d.getMonth()]}
-function offCls(s){var o=offDay(s);return !o?'':o.type==='fuori'?' out':o.type==='assenza'?' off ill':' off'}
+function offCls(s){var o=offDay(s);return !o?(permDay(s).length?' half':''):o.type==='fuori'?' out':o.type==='assenza'?' off ill':' off'}
 function yearPill(){var y0=schoolYearOf(iso(cal)),r=yearRange(y0);return '<button class="opill" data-act="yearopen" style="margin:0;flex:none">'+ic('calendar',18)+'Anno '+yearLabel(y0)+'</button>'}
 function openYear(y0){
   y0=y0||schoolYearOf(iso(cal));var r=yearRange(y0);sheet={kind:'year',y:y0};
@@ -1464,8 +1464,8 @@ function vCalImp(){
   var sel=parse(calSel);
   var evs=state.events.filter(function(e){return e.date===calSel&&inS(e)}).sort(byStart);
   h+='<div class="dhead" style="margin:26px 0 4px"><h2>'+GIORNI[sel.getDay()]+' '+sel.getDate()+' '+MESI[sel.getMonth()]+'</h2></div>';
-  var od=offDay(calSel);if(od)h+='<div class="calcards" style="margin-top:8px"><button type="button" class="rowbtn" data-act="'+(od.builtin?'':'offedit')+'" data-id="'+(od.id||'')+'"><span class="grow"><span class="t">'+esc(offTxt(od))+'</span><span class="m">'+esc(offRange(od))+' · presenze e assenze non contate</span></span>'+(od.builtin?'':'<span class="chev">'+ic('right',20)+'</span>')+'</button></div>';var cq=collOn(calSel);h+=(evs.length||cq.length)?'<p class="m" style="margin:2px 0 0">Tocca un impegno per modificarlo.</p><div class="calcards">'+evs.map(eventRow).join('')+cq.map(collRow).join('')+'</div>':'<p class="m empty softempty">Nessun impegno in questo giorno.</p>';
-  h+='<div class="noteb" style="margin-top:12px"><button class="opill" data-act="fab">'+ic('plus',18)+'Aggiungi impegno</button><button class="opill" data-act="offnew">'+ic('calendar',18)+'Festa o assenza</button><label class="opill" for="calfile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6m-3 3 3-3 3 3"/></svg>Aggiungi da file</label><button class="opill" data-act="pdfmonth" aria-label="Esporta il mese in PDF"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>PDF</button><input class="sr" id="calfile" type="file" accept=".pdf,.docx,.txt,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv"></div><div id="docstatus" role="status" aria-live="polite"></div>';var nP0=state.school!=='all'&&state.events.filter(function(e){return e.school===state.school&&e.src==='pdf'}).length,conf0=pendingClearCal===state.school+'|pdf';h+='<div class="noteb" style="margin-top:10px">'+(nP0&&!conf0?'<button class="opill" data-act="clearevents" data-mode="pdf" aria-label="Elimina solo gli impegni aggiunti da file"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5"/></svg>Elimina impegni da file</button>':'')+'</div>';
+  var pd=permDay(calSel);if(pd.length)h+='<div class="calcards" style="margin-top:8px">'+pd.map(function(o){return '<button type="button" class="rowbtn" data-act="offedit" data-id="'+o.id+'"><span class="grow"><span class="t">'+esc(offTxt(o))+'</span><span class="m">'+esc(offRange(o))+'</span></span><span class="chev">'+ic('right',20)+'</span></button>'}).join('')+'</div>';var od=offDay(calSel);if(od)h+='<div class="calcards" style="margin-top:8px"><button type="button" class="rowbtn" data-act="'+(od.builtin?'':'offedit')+'" data-id="'+(od.id||'')+'"><span class="grow"><span class="t">'+esc(offTxt(od))+'</span><span class="m">'+esc(offRange(od))+' · presenze e assenze non contate</span></span>'+(od.builtin?'':'<span class="chev">'+ic('right',20)+'</span>')+'</button></div>';var cq=collOn(calSel);h+=(evs.length||cq.length)?'<p class="m" style="margin:2px 0 0">Tocca un impegno per modificarlo.</p><div class="calcards">'+evs.map(eventRow).join('')+cq.map(collRow).join('')+'</div>':'<p class="m empty softempty">Nessun impegno in questo giorno.</p>';
+  h+='<div class="noteb" style="margin-top:12px"><button class="opill" data-act="evnew">'+ic('plus',18)+'Aggiungi impegno</button><label class="opill" for="calfile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6m-3 3 3-3 3 3"/></svg>Aggiungi da file</label><button class="opill" data-act="offnew">'+ic('calendar',18)+'Festa, assenza o permesso</button><button class="opill" data-act="pdfmonth" aria-label="Esporta il mese in PDF"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>PDF</button><input class="sr" id="calfile" type="file" accept=".pdf,.docx,.txt,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv"></div><div id="docstatus" role="status" aria-live="polite"></div>';var nP0=state.school!=='all'&&state.events.filter(function(e){return e.school===state.school&&e.src==='pdf'}).length,conf0=pendingClearCal===state.school+'|pdf';h+='<div class="noteb" style="margin-top:10px">'+(nP0&&!conf0?'<button class="opill" data-act="clearevents" data-mode="pdf" aria-label="Elimina solo gli impegni aggiunti da file"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5"/></svg>Elimina impegni da file</button>':'')+'</div>';
   if(state.school!=='all'){
     var nPdfCal=state.events.filter(function(e){return e.school===state.school&&e.src==='pdf'}).length;
     if(nPdfCal){
@@ -4247,27 +4247,30 @@ function saveHours(){
   save();closeSheet();flash='Ho aggiornato gli orari delle ore.';render();
 }
 
-function userOff(d){var a=state.offdays||[];for(var i=0;i<a.length;i++){var o=a[i];if(o&&d>=o.from&&d<=(o.to||o.from))return o}return null}
+function userOff(d){var a=state.offdays||[];for(var i=0;i<a.length;i++){var o=a[i];if(o&&o.type!=='permesso'&&d>=o.from&&d<=(o.to||o.from))return o}return null}
 function offDay(d){if(typeof d!=='string')return null;var u=userOff(d);if(u)return u;var nm=natHolMap(+d.slice(0,4))[d];var r=yearRange(schoolYearOf(d));if(nm)return {type:'festa',from:d,to:'',note:nm,builtin:true};return (d<r.start||d>r.end)?{type:'fuori',from:d,to:'',note:'',builtin:true}:null}
-function offTxt(o){return o?(o.type==='fuori'?'Fuori dall’anno scolastico':(o.type==='festa'?'Festa':'Assenza del docente')+(o.note?' · '+o.note:'')):''}
+function offTxt(o){return o?(o.type==='fuori'?'Fuori dall’anno scolastico':(o.type==='festa'?'Festa':o.type==='permesso'?'Permesso':'Assenza del docente')+(o.note?' · '+o.note:'')):''}
 function offLabel(d){return offTxt(offDay(d))}
-function offRange(o){return o.to&&o.to!==o.from?'dal '+shortDate(o.from)+' al '+shortDate(o.to):whenOf(o.from)}
+function offRange(o){return o.to&&o.to!==o.from?'dal '+shortDate(o.from)+' al '+shortDate(o.to):whenOf(o.from)+(o.type==='permesso'&&o.t1&&o.t2?' · '+o.t1+'–'+o.t2:(o.type==='permesso'&&o.t1?' · dalle '+o.t1:''))}
 function absLogR(){var L=state.absLog||{},r={};Object.keys(L).forEach(function(d){if(!offDay(d))r[d]=L[d]});return r}
 function offMonthHTML(){var y=cal.getFullYear(),m=cal.getMonth(),first=y+'-'+pad(m+1)+'-01',last=y+'-'+pad(m+1)+'-31';
   var l=(state.offdays||[]).filter(function(o){return o.from<=last&&(o.to||o.from)>=first}).concat(natInMonth(y,m)).sort(function(a,b){return a.from.localeCompare(b.from)});
   if(!l.length)return '';
-  return '<h2 style="margin:18px 0 4px">Feste e assenze del mese</h2><div class="calcards">'+l.map(function(o){return '<button type="button" class="rowbtn" data-act="'+(o.builtin?'':'offedit')+'" data-id="'+(o.id||'')+'"><span class="grow"><span class="t">'+esc(offTxt(o))+'</span><span class="m">'+esc(offRange(o))+'</span></span>'+(o.builtin?'':'<span class="chev">'+ic('right',20)+'</span>')+'</button>'}).join('')+'</div>'}
+  return '<h2 style="margin:18px 0 4px">Feste, assenze e permessi del mese</h2><div class="calcards">'+l.map(function(o){return '<button type="button" class="rowbtn" data-act="'+(o.builtin?'':'offedit')+'" data-id="'+(o.id||'')+'"><span class="grow"><span class="t">'+esc(offTxt(o))+'</span><span class="m">'+esc(offRange(o))+'</span></span>'+(o.builtin?'':'<span class="chev">'+ic('right',20)+'</span>')+'</button>'}).join('')+'</div>'}
 function easterD(y){var a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da)}
 var _nh={};
 function natHolMap(y){if(_nh[y])return _nh[y];var m={};m[y+'-01-01']='Capodanno';m[y+'-01-06']='Epifania';m[iso(addDays(easterD(y),1))]='Lunedì dell’Angelo';m[y+'-04-25']='Festa della Liberazione';m[y+'-05-01']='Festa dei lavoratori';m[y+'-06-02']='Festa della Repubblica';m[y+'-11-01']='Ognissanti';m[y+'-12-08']='Immacolata Concezione';m[y+'-12-25']='Natale';m[y+'-12-26']='Santo Stefano';return _nh[y]=m}
 function natInMonth(y,mo){var m=natHolMap(y),pre=y+'-'+pad(mo+1)+'-',r=[];Object.keys(m).sort().forEach(function(d){if(d.indexOf(pre)===0&&!userOff(d))r.push({type:'festa',from:d,to:'',note:m[d],builtin:true})});return r}
+function permDay(d){return (state.offdays||[]).filter(function(o){return o&&o.type==='permesso'&&o.from===d})}
+function offTypeTog(){var el=document.getElementById('of-type');if(!el)return;var p=el.value==='permesso',tm=document.getElementById('of-tm'),tw=document.getElementById('of-towrap');if(tm)tm.style.display=p?'flex':'none';if(tw)tw.style.display=p?'none':''}
 function openOff(id,dt){
   var o=id?(state.offdays||[]).filter(function(x){return x.id===id})[0]:null;if(id&&!o)return;
   var v=o||{type:'festa',from:dt||iso(new Date()),to:'',note:''};
   sheet={kind:'off',id:id||null};
-  var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Giorno di festa o assenza"><h2>'+(o?'Modifica giorno':'Festa o assenza')+'</h2><p class="m" style="margin:0 0 10px">In questi giorni presenze e assenze degli alunni non vengono contate.</p>'+
-    '<div class="f"><label for="of-type">Tipo</label><select id="of-type"><option value="festa"'+(v.type==='festa'?' selected':'')+'>Festa o scuola chiusa</option><option value="assenza"'+(v.type==='assenza'?' selected':'')+'>Assenza del docente (malattia, permesso…)</option></select></div>'+
-    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="of-from">Dal</label><input id="of-from" type="date" value="'+esc(v.from)+'"></div><div class="f" style="flex:1;min-width:0"><label for="of-to">Al (facoltativo)</label><input id="of-to" type="date" value="'+esc(v.to||'')+'"></div></div>'+
+  var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Giorno di festa o assenza"><h2>'+(o?'Modifica giorno':'Festa, assenza o permesso')+'</h2><p class="m" style="margin:0 0 10px">Per feste e assenze del docente, presenze e assenze degli alunni non vengono contate in quei giorni. Le ore di permesso restano solo un promemoria.</p>'+
+    '<div class="f"><label for="of-type">Tipo</label><select id="of-type"><option value="festa"'+(v.type==='festa'?' selected':'')+'>Festa o scuola chiusa</option><option value="assenza"'+(v.type==='assenza'?' selected':'')+'>Assenza del docente (malattia…)</option><option value="permesso"'+(v.type==='permesso'?' selected':'')+'>Ore di permesso (assemblea, altro…)</option></select></div>'+
+    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="of-from">Dal</label><input id="of-from" type="date" value="'+esc(v.from)+'"></div><div class="f" id="of-towrap" style="flex:1;min-width:0;'+(v.type==='permesso'?'display:none':'')+'"><label for="of-to">Al (facoltativo)</label><input id="of-to" type="date" value="'+esc(v.to||'')+'"></div></div>'+
+    '<div id="of-tm" style="display:'+(v.type==='permesso'?'flex':'none')+';gap:10px"><div class="f" style="flex:1;min-width:0"><label for="of-t1">Dalle ore</label><input id="of-t1" type="time" value="'+esc(v.t1||'')+'"></div><div class="f" style="flex:1;min-width:0"><label for="of-t2">Alle ore</label><input id="of-t2" type="time" value="'+esc(v.t2||'')+'"></div></div>'+
     '<div class="f"><label for="of-note">Nota (facoltativa)</label><input id="of-note" type="text" maxlength="80" value="'+esc(v.note||'')+'"></div>'+
     '<p class="m" id="of-err" style="margin:0 0 10px;color:var(--red)"></p>'+
     '<div class="sbtns"><button class="btn" data-act="offsave">Salva</button>'+(o?'<button class="btn ghost" data-act="offdel" data-id="'+o.id+'" style="color:#d62828">Elimina</button>':'')+'<button class="btn ghost" data-act="close">Annulla</button></div></div></div>';
@@ -4277,7 +4280,8 @@ function saveOff(){
   var f=document.getElementById('of-from').value,t=document.getElementById('of-to').value,e=document.getElementById('of-err');
   if(!f){e.textContent='Scegli la data.';return}
   if(t&&t<f){e.textContent='La data finale è prima di quella iniziale.';return}
-  var rec={type:document.getElementById('of-type').value,from:f,to:(t&&t!==f)?t:'',note:document.getElementById('of-note').value.trim()};
+  var rec={type:document.getElementById('of-type').value,from:f,to:(t&&t!==f&&document.getElementById('of-type').value!=='permesso')?t:'',note:document.getElementById('of-note').value.trim(),t1:document.getElementById('of-type').value==='permesso'?document.getElementById('of-t1').value:'',t2:document.getElementById('of-type').value==='permesso'?document.getElementById('of-t2').value:''};
+  if(rec.type==='permesso'&&rec.t1&&rec.t2&&rec.t2<=rec.t1){e.textContent='L’ora finale deve essere dopo quella iniziale.';return}
   state.offdays=state.offdays||[];
   var q=sheet&&sheet.id?state.offdays.filter(function(x){return x.id===sheet.id})[0]:null;
   if(q)Object.assign(q,rec);else{rec.id=uid();state.offdays.push(rec)}
@@ -4285,7 +4289,7 @@ function saveOff(){
 }
 function openAddMenu(){
   sheet={kind:'addmenu'};
-  var items=[['event','Impegno','Riunione, colloqui generali, scadenza\u2026','clock'],['coll','Colloquio individuale','Preparalo e scrivi l\u2019esito','chat'],['task','Attivit\u00e0','Una cosa da fare, con scadenza','check'],['note','Annotazione','Scrivi una nota da ricordare','edit'],['off','Festa o assenza','Giorni in cui presenze e assenze non contano','calendar']];
+  var items=[['event','Impegno','Riunione, colloqui generali, scadenza\u2026','clock'],['coll','Colloquio individuale','Preparalo e scrivi l\u2019esito','chat'],['task','Attivit\u00e0','Una cosa da fare, con scadenza','check'],['note','Annotazione','Scrivi una nota da ricordare','edit'],['off','Festa, assenza o permesso','Feste, assenze e ore di permesso','calendar']];
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Cosa vuoi aggiungere?"><h2>Cosa vuoi aggiungere?</h2>'+items.map(function(x){return '<button type="button" class="hubopt" data-act="addpick" data-k="'+x[0]+'"><span class="hi">'+ic(x[3],20)+'</span><span class="grow"><span class="t">'+x[1]+'</span><span class="m">'+x[2]+'</span></span><span class="chev">'+ic('right',20)+'</span></button>'}).join('')+'<div class="sbtns" style="margin-top:10px"><button class="btn ghost" data-act="close">Annulla</button></div></div></div>';
   document.getElementById('sheet').innerHTML=h;
   document.body.style.overflow='hidden';
@@ -4357,7 +4361,7 @@ function fabAction(){
 }
 function openCalAddMenu(){
   sheet={kind:'addmenu'};
-  var items=[['event','Impegno','Riunione, colloqui generali, scadenza…','clock'],['off','Festa o assenza','Giorni in cui presenze e assenze non contano','calendar']];
+  var items=[['event','Impegno','Riunione, colloqui generali, scadenza…','clock'],['off','Festa, assenza o permesso','Feste, assenze e ore di permesso','calendar']];
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Cosa vuoi aggiungere?"><h2>Cosa vuoi aggiungere?</h2>'+items.map(function(x){return '<button type="button" class="hubopt" data-act="calpick" data-k="'+x[0]+'"><span class="hi">'+ic(x[3],20)+'</span><span class="grow"><span class="t">'+x[1]+'</span><span class="m">'+x[2]+'</span></span><span class="chev">'+ic('right',20)+'</span></button>'}).join('')+'<div class="sbtns" style="margin-top:10px"><button class="btn ghost" data-act="close">Annulla</button></div></div></div>';
   document.getElementById('sheet').innerHTML=h;
   document.body.style.overflow='hidden';
@@ -5930,6 +5934,7 @@ async function onAgendaClick(e){
   else if(a==='colldayoff'){ui().collDay=null;render()}
   else if(a==='colledit')openColl(el.dataset.id||null,el.dataset.sid||'',el.dataset.d||undefined);
   else if(a==='collsave')saveColl();
+  else if(a==='evnew')openSheet('event',null,{date:calSel});
   else if(a==='offnew')openOff(null,calSel);
   else if(a==='yearopen')openYear();
   else if(a==='yearsave')saveYear();
