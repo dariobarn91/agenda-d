@@ -1462,7 +1462,7 @@ function collRow(q){var s=studById(q.sid),c=s?clsById(s.cls):null;return '<butto
 function vCalImp(){
   var h=monthCells(function(s){return state.events.filter(function(e){return e.date===s&&inS(e)}).length+collOn(s).length});
   var sel=parse(calSel);
-  var evs=state.events.filter(function(e){return e.date===calSel&&inS(e)}).sort(byStart);h+=offMonthHTML();
+  var evs=state.events.filter(function(e){return e.date===calSel&&inS(e)}).sort(byStart);
   h+='<div class="dhead" style="margin:26px 0 4px"><h2>'+GIORNI[sel.getDay()]+' '+sel.getDate()+' '+MESI[sel.getMonth()]+'</h2></div>';
   var od=offDay(calSel);if(od)h+='<div class="calcards" style="margin-top:8px"><button type="button" class="rowbtn" data-act="'+(od.builtin?'':'offedit')+'" data-id="'+(od.id||'')+'"><span class="grow"><span class="t">'+esc(offTxt(od))+'</span><span class="m">'+esc(offRange(od))+' · presenze e assenze non contate</span></span>'+(od.builtin?'':'<span class="chev">'+ic('right',20)+'</span>')+'</button></div>';var cq=collOn(calSel);h+=(evs.length||cq.length)?'<p class="m" style="margin:2px 0 0">Tocca un impegno per modificarlo.</p><div class="calcards">'+evs.map(eventRow).join('')+cq.map(collRow).join('')+'</div>':'<p class="m empty softempty">Nessun impegno in questo giorno.</p>';
   h+='<div class="noteb" style="margin-top:12px"><button class="opill" data-act="fab">'+ic('plus',18)+'Aggiungi impegno</button><button class="opill" data-act="offnew">'+ic('calendar',18)+'Festa o assenza</button><label class="opill" for="calfile"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6m-3 3 3-3 3 3"/></svg>Aggiungi da file</label><button class="opill" data-act="pdfmonth" aria-label="Esporta il mese in PDF"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>PDF</button><input class="sr" id="calfile" type="file" accept=".pdf,.docx,.txt,.csv,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv"></div><div id="docstatus" role="status" aria-live="polite"></div>';var nP0=state.school!=='all'&&state.events.filter(function(e){return e.school===state.school&&e.src==='pdf'}).length,conf0=pendingClearCal===state.school+'|pdf';h+='<div class="noteb" style="margin-top:10px">'+(nP0&&!conf0?'<button class="opill" data-act="clearevents" data-mode="pdf" aria-label="Elimina solo gli impegni aggiunti da file"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v5m4-5v5"/></svg>Elimina impegni da file</button>':'')+'</div>';
@@ -1476,7 +1476,7 @@ function vCalImp(){
       }
     }
   }
-  return h;
+  return h+offMonthHTML();
 }
 function vCalLess(){
   if(state.school==='all')return '<p class="m" style="margin-top:16px">Scegli una scuola in alto per vedere il calendario delle lezioni.</p>';
