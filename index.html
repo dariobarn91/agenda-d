@@ -203,8 +203,277 @@ button.h1chev{border:0;outline:0;margin:0;cursor:pointer;-webkit-tap-highlight-c
 .calsj{display:flex;align-items:center;gap:10px;margin:10px 0 4px}.calsjn{font:800 26px var(--font-head);color:var(--ink)}
 .curcard .cc-t .cc-ann{display:inline-block;margin:0 0 0 10px;padding:3px 10px;vertical-align:middle;font-size:13px;white-space:nowrap;background:var(--green-bg);color:var(--green)}.curcard .cc-top{flex-wrap:wrap;row-gap:8px}.curcard .cc-top .cc-chips{flex:0 0 100%;order:3;display:flex;flex-wrap:wrap;gap:6px}.curcard .cc-top .cc-chips .cc-ann{margin:0;padding:3px 10px;font-size:12.5px}
 .lezchips{margin:6px 0 12px}
-</style><style id="offdays">.soft .daybox>.subjtray{background:var(--blue-bg);box-shadow:none;border-radius:0 0 22px 22px;margin-top:-26px;padding:36px 12px 14px;position:relative;z-index:0}.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.half{background:linear-gradient(135deg,var(--line) 50%,transparent 50%)}.day.half.today{background:linear-gradient(135deg,#7f8fd0 50%,var(--blue) 50%)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style></head>
+</style><style id="offdays">.swb.g{background:var(--green-bg);color:var(--green)}.soft .daybox>.subjtray{background:var(--blue-bg);box-shadow:none;border-radius:0 0 22px 22px;margin-top:-26px;padding:36px 12px 14px;position:relative;z-index:0}.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.half{background:linear-gradient(135deg,var(--line) 50%,transparent 50%)}.day.half.today{background:linear-gradient(135deg,#7f8fd0 50%,var(--blue) 50%)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style></head>
 <body onload="avviaAgenda()">
+<style id="applock-css">
+html.alk-on #app,html.alk-on nav,html.alk-on #fab,html.alk-on #sheet{visibility:hidden!important}
+html.alk-veil body::after{content:"";position:fixed;inset:0;background:var(--paper);z-index:2999}
+#applock{position:fixed;inset:0;z-index:3000;background:var(--paper);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom));font-family:var(--font-ui,system-ui,sans-serif);visibility:visible;overflow:auto;-webkit-user-select:none;user-select:none}
+#applock .alk-i{width:64px;height:64px;border-radius:20px;background:var(--blue-bg);color:var(--blue);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+#applock h1{font-size:24px;margin:0 0 4px;font-weight:900}
+#applock .alk-s{margin:0 0 22px;color:var(--ink2);font-size:15px;min-height:20px;text-align:center}
+#applock .alk-s.err{color:var(--red);font-weight:700}
+#applock .alk-d{display:flex;gap:14px;margin-bottom:26px}
+#applock .alk-d i{width:14px;height:14px;border-radius:50%;border:2px solid var(--blue);display:block}
+#applock .alk-d i.on{background:var(--blue)}
+#applock .alk-d.shake{animation:alkshake .35s}
+@keyframes alkshake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+#applock .alk-k{display:grid;grid-template-columns:repeat(3,76px);gap:14px}
+#applock .alk-k button{width:76px;height:76px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font:700 28px var(--font-ui,system-ui,sans-serif);box-shadow:0 1px 3px rgba(21,29,59,.12);cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;padding:0}
+#applock .alk-k button:active{background:var(--blue-bg)}
+#applock .alk-k button.alk-x{background:none;box-shadow:none;color:var(--blue)}
+#applock .alk-k button[disabled]{opacity:.4}
+#applock .alk-f{margin-top:20px;border:0;background:var(--blue-bg);color:var(--blue);font:700 16px var(--font-ui,system-ui,sans-serif);border-radius:14px;padding:12px 20px;cursor:pointer;display:none;align-items:center;gap:8px}
+#applock .alk-f.on{display:inline-flex}
+#applock .alk-l{margin-top:14px;border:0;background:none;color:var(--ink2);font:700 14px var(--font-ui,system-ui,sans-serif);cursor:pointer;padding:8px}
+#alk-dlg{position:fixed;inset:0;z-index:2500;background:rgba(10,16,40,.45);display:flex;align-items:center;justify-content:center;padding:18px;font-family:var(--font-ui,system-ui,sans-serif)}
+#alk-dlg .alk-c{background:var(--card);color:var(--ink);border-radius:20px;padding:22px 20px 18px;width:100%;max-width:420px;max-height:90%;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+#alk-dlg h2{margin:0 0 6px;font-size:20px;font-weight:900}
+#alk-dlg p{margin:0 0 12px;color:var(--ink2);font-size:15px;line-height:1.4}
+#alk-dlg label{display:block;font-weight:700;font-size:14px;margin:10px 0 4px}
+#alk-dlg input,#alk-dlg select{width:100%;box-sizing:border-box;font:700 18px var(--font-ui,system-ui,sans-serif);padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+#alk-dlg input.pin{letter-spacing:.35em;text-align:center}
+#alk-dlg .alk-msg{min-height:20px;margin:8px 0 0;color:var(--red);font-weight:700;font-size:14px}
+#alk-dlg .alk-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+#alk-dlg .alk-row button,#alk-dlg .alk-list button{flex:1;min-height:46px;border:0;border-radius:14px;padding:11px 16px;font:700 16px var(--font-ui,system-ui,sans-serif);cursor:pointer;background:var(--blue);color:var(--on-blue)}
+#alk-dlg .alk-row button.g{background:var(--blue-bg);color:var(--blue)}
+#alk-dlg .alk-row button.r,#alk-dlg .alk-list button.r{background:var(--red-bg);color:var(--red)}
+#alk-dlg .alk-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+#alk-dlg .alk-list button{flex:none;text-align:left;background:var(--blue-bg);color:var(--blue)}
+#alk-dlg .alk-st{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper);border-radius:12px;padding:10px 14px;font-weight:700;margin-top:8px}
+#alk-dlg .alk-st span.m{font-weight:400;color:var(--ink2);font-size:13px;display:block}
+</style>
+<script id="applock-js">
+(function(){
+var LS='ad-lock',FS='ad-lock-f';
+var LOCK_SVG='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>';
+var FACE_SVG='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16"/><path d="M9 9.5v1.2M15 9.5v1.2M12 9.5v3.2h-1M9 15.2c1.7 1.3 4.3 1.3 6 0"/></svg>';
+var BACK_SVG='<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-6-6z"/><path d="m12.5 10 4 4M16.5 10l-4 4"/></svg>';
+var root=document.documentElement,ov=null,buf='',busy=false,hiddenAt=0,locked=false,outTimer=null;
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function get(){try{var o=JSON.parse(localStorage.getItem(LS));return o&&o.h?o:null}catch(e){return null}}
+function put(o){try{if(o)localStorage.setItem(LS,JSON.stringify(o));else localStorage.removeItem(LS);return true}catch(e){return false}}
+function fget(){try{return JSON.parse(localStorage.getItem(FS))||{n:0,until:0}}catch(e){return {n:0,until:0}}}
+function fput(o){try{localStorage.setItem(FS,JSON.stringify(o))}catch(e){}}
+function hex(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')}
+function rnd(n){var a=new Uint8Array(n);(window.crypto||window.msCrypto).getRandomValues(a);return a}
+function b64(buf2){var s='',a=new Uint8Array(buf2);for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]);return btoa(s)}
+function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
+async function hashPin(pin,salt){
+  try{
+    if(window.crypto&&crypto.subtle){
+      var k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveBits']);
+      var bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:unb64(salt),iterations:120000,hash:'SHA-256'},k,256);
+      return 'p'+hex(bits);
+    }
+  }catch(e){}
+  var h1=0xdeadbeef,h2=0x41c6ce57,s=salt+':'+pin;
+  for(var r=0;r<2000;r++)for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+  h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return 'f'+(4294967296*(2097151&h2)+(h1>>>0)).toString(16);
+}
+async function checkPin(pin){var o=get();if(!o)return false;var h=await hashPin(pin,o.s);
+  if(o.h.charAt(0)==='p'&&h.charAt(0)!=='p')return false;return h===o.h}
+function bioSupported(){
+  try{if(!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext))return Promise.resolve(false);
+    return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(v){return !!v}).catch(function(){return false})}catch(e){return Promise.resolve(false)}
+}
+async function bioRegister(){
+  var cred=await navigator.credentials.create({publicKey:{
+    challenge:rnd(32),rp:{name:'Agenda docente'},
+    user:{id:rnd(16),name:'docente',displayName:'Docente'},
+    pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+    authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'discouraged'},
+    timeout:60000,attestation:'none'}});
+  return b64(cred.rawId);
+}
+async function bioAsk(id){
+  var r=await navigator.credentials.get({publicKey:{challenge:rnd(32),allowCredentials:[{type:'public-key',id:unb64(id)}],userVerification:'required',timeout:60000}});
+  return !!r;
+}
+function enabled(){return !!get()}
+/* ---------- schermata di blocco ---------- */
+function dots(){var o=get(),l=o?o.l:4,h='';for(var i=0;i<l;i++)h+='<i'+(i<buf.length?' class="on"':'')+'></i>';return h}
+function setMsg(t,err){var s=ov&&ov.querySelector('.alk-s');if(s){s.textContent=t;s.className='alk-s'+(err?' err':'')}}
+function drawDots(){var d=ov&&ov.querySelector('.alk-d');if(d)d.innerHTML=dots()}
+function showLock(){
+  var o=get();if(!o)return;
+  locked=true;root.classList.add('alk-on');root.classList.remove('alk-veil');
+  if(ov){return}
+  buf='';
+  ov=document.createElement('div');ov.id='applock';ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label','Agenda bloccata');
+  var k='';for(var i=1;i<=9;i++)k+='<button type="button" data-k="'+i+'">'+i+'</button>';
+  k+='<button type="button" class="alk-x" disabled aria-hidden="true"></button><button type="button" data-k="0">0</button><button type="button" class="alk-x" data-k="del" aria-label="Cancella">'+BACK_SVG+'</button>';
+  ov.innerHTML='<div class="alk-i">'+LOCK_SVG+'</div><h1>Agenda docente</h1><p class="alk-s">Inserisci il PIN per entrare</p><div class="alk-d" aria-hidden="true">'+dots()+'</div><div class="alk-k">'+k+'</div><button type="button" class="alk-f" data-k="bio">'+FACE_SVG+'Usa Face ID / Touch ID</button><button type="button" class="alk-l" data-k="forgot">PIN dimenticato?</button>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click',onLockClick);
+  if(o.bio){bioSupported().then(function(ok){if(ok&&ov){ov.querySelector('.alk-f').classList.add('on');tryBio(true)}})}
+  checkWait();
+}
+function hideLock(){
+  locked=false;buf='';
+  if(ov){ov.remove();ov=null}
+  root.classList.remove('alk-on','alk-veil');
+  var f=fget();f.n=0;f.until=0;fput(f);
+  try{window.scrollTo(0,0)}catch(e){}
+}
+function checkWait(){
+  var f=fget(),left=Math.ceil((f.until-Date.now())/1000);
+  if(left>0&&ov){
+    setMsg('Troppi tentativi. Riprova tra '+left+' s',true);
+    ov.querySelectorAll('.alk-k button[data-k]').forEach(function(b){b.disabled=true});
+    clearTimeout(outTimer);outTimer=setTimeout(checkWait,1000);return true;
+  }
+  if(ov){ov.querySelectorAll('.alk-k button[data-k]').forEach(function(b){b.disabled=false});if(f.until&&ov.querySelector('.alk-s.err'))setMsg('Inserisci il PIN per entrare')}
+  return false;
+}
+async function tryBio(auto){
+  var o=get();if(!o||!o.bio||busy)return;
+  busy=true;
+  try{var ok=await bioAsk(o.bio);if(ok)hideLock()}catch(e){if(!auto)setMsg('Face ID non riuscito. Inserisci il PIN.',true)}
+  busy=false;
+}
+async function press(k){
+  if(busy)return;var o=get();if(!o)return;
+  if(checkWait())return;
+  if(k==='del'){buf=buf.slice(0,-1);drawDots();return}
+  if(!/^\d$/.test(k)||buf.length>=o.l)return;
+  buf+=k;drawDots();
+  if(buf.length<o.l)return;
+  busy=true;var ok=false;
+  try{ok=await checkPin(buf)}catch(e){}
+  busy=false;
+  if(ok){hideLock();return}
+  var f=fget();f.n=(f.n||0)+1;
+  if(f.n%5===0){f.until=Date.now()+Math.min(900000,30000*Math.pow(2,f.n/5-1))}
+  fput(f);
+  buf='';
+  var d=ov&&ov.querySelector('.alk-d');if(d){d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake')}
+  drawDots();setMsg('PIN errato',true);
+  try{if(navigator.vibrate)navigator.vibrate(120)}catch(e){}
+  checkWait();
+}
+function onLockClick(e){
+  var b=e.target.closest&&e.target.closest('[data-k]');if(!b||b.disabled)return;
+  var k=b.getAttribute('data-k');
+  if(k==='bio')tryBio(false);
+  else if(k==='forgot')forgot();
+  else press(k);
+}
+function forgot(){
+  var o=get();
+  var t='Se hai attivato Face ID / Touch ID, usalo per entrare e poi cambia il PIN da Impostazioni > Blocco app.\n\nSe non puoi entrare in nessun modo, puoi azzerare questo dispositivo: il blocco e i dati salvati qui vengono eliminati. Se avevi effettuato l’accesso a un account, i dati si ricaricano dopo averlo rifatto.\n\nAzzerare ora?';
+  if(!confirm(t))return;
+  if(!confirm('Ultima conferma: i dati di questo dispositivo verranno cancellati.'))return;
+  (async function(){
+    try{indexedDB.databases&&(await indexedDB.databases()).forEach(function(d){if(d.name)indexedDB.deleteDatabase(d.name)})}catch(e){}
+    try{localStorage.clear()}catch(e){}
+    try{sessionStorage.clear()}catch(e){}
+    location.reload();
+  })();
+}
+document.addEventListener('keydown',function(e){
+  if(!locked||!ov)return;
+  if(/^\d$/.test(e.key)){press(e.key);e.preventDefault()}
+  else if(e.key==='Backspace'){press('del');e.preventDefault()}
+},true);
+/* ---------- quando l’app torna in primo piano ---------- */
+function afterSecs(){var o=get();return o&&typeof o.a==='number'?o.a:60}
+function picking(){try{return !!(window.__agendaPicking&&window.__agendaPicking())}catch(e){return false}}
+document.addEventListener('visibilitychange',function(){
+  if(!enabled())return;
+  if(document.hidden){
+    if(!locked){hiddenAt=Date.now();root.classList.add('alk-veil')}
+  }else{
+    if(locked){root.classList.remove('alk-veil');return}
+    var el=(Date.now()-hiddenAt)/1000;
+    if(!picking()&&el>=afterSecs())showLock();else root.classList.remove('alk-veil');
+  }
+});
+window.addEventListener('pageshow',function(e){if(e.persisted&&enabled()&&!locked&&!picking())showLock()});
+/* ---------- impostazioni ---------- */
+var dlg=null;
+function closeDlg(){if(dlg){dlg.remove();dlg=null}document.body.style.overflow=''}
+function refresh(){try{if(window.__agendaRender)window.__agendaRender()}catch(e){}}
+function msg(t){var m=dlg&&dlg.querySelector('.alk-msg');if(m)m.textContent=t||''}
+function openDlg(h){
+  if(!dlg){dlg=document.createElement('div');dlg.id='alk-dlg';dlg.addEventListener('click',onDlgClick);dlg.addEventListener('input',function(e){if(e.target.classList.contains('pin'))e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});document.body.appendChild(dlg)}
+  dlg.innerHTML='<div class="alk-c" role="dialog" aria-modal="true">'+h+'</div>';
+  document.body.style.overflow='hidden';
+  var f=dlg.querySelector('input');if(f)setTimeout(function(){try{f.focus()}catch(e){}},50);
+}
+function pinField(id,label){return '<label for="'+id+'">'+label+'</label><input class="pin" id="'+id+'" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" aria-label="'+esc(label)+'">'}
+function viewOff(){
+  openDlg('<h2>Blocco con PIN</h2><p>All’apertura dell’agenda ti verrà chiesto un PIN (4–6 cifre). Potrai usare anche Face ID o Touch ID, se il telefono lo permette.</p>'+pinField('alk-n1','Nuovo PIN')+pinField('alk-n2','Ripeti il PIN')+'<p class="alk-msg" role="alert"></p><div class="alk-row"><button type="button" class="g" data-a="close">Annulla</button><button type="button" data-a="enable">Attiva blocco</button></div>');
+}
+async function viewOn(){
+  var o=get();if(!o){closeDlg();return}
+  var sup=await bioSupported();
+  var bioHtml=sup?('<div class="alk-st"><div>Face ID / Touch ID<span class="m">'+(o.bio?'Attivo':'Non attivo')+'</span></div><button type="button" style="flex:none;min-height:38px;padding:8px 14px;border:0;border-radius:12px;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;background:var(--blue-bg);color:var(--blue)" data-a="'+(o.bio?'biooff':'bioon')+'">'+(o.bio?'Disattiva':'Attiva')+'</button></div>'):('<div class="alk-st"><div>Face ID / Touch ID<span class="m">Non disponibile su questo dispositivo o browser</span></div></div>');
+  var a=afterSecs(),opts=[[0,'Subito'],[60,'Dopo 1 minuto'],[300,'Dopo 5 minuti'],[900,'Dopo 15 minuti']].map(function(x){return '<option value="'+x[0]+'"'+(a===x[0]?' selected':'')+'>'+x[1]+'</option>'}).join('');
+  openDlg('<h2>Blocco app attivo</h2><p>PIN di '+o.l+' cifre.</p>'+bioHtml+'<label for="alk-a">Blocca quando esci dall’app</label><select id="alk-a">'+opts+'</select><div class="alk-list"><button type="button" data-a="chpin">Cambia PIN</button><button type="button" class="r" data-a="remove">Togli il blocco</button></div><p class="alk-msg" role="alert"></p><div class="alk-row"><button type="button" class="g" data-a="close">Chiudi</button></div>');
+}
+function viewChange(){
+  openDlg('<h2>Cambia PIN</h2>'+pinField('alk-c0','PIN attuale')+pinField('alk-n1','Nuovo PIN')+pinField('alk-n2','Ripeti il nuovo PIN')+'<p class="alk-msg" role="alert"></p><div class="alk-row"><button type="button" class="g" data-a="back">Indietro</button><button type="button" data-a="dochange">Salva</button></div>');
+}
+function viewRemove(){
+  openDlg('<h2>Togliere il blocco?</h2><p>Per confermare inserisci il PIN attuale. Dopo, l’agenda si aprirà senza PIN.</p>'+pinField('alk-c0','PIN attuale')+'<p class="alk-msg" role="alert"></p><div class="alk-row"><button type="button" class="g" data-a="back">Annulla</button><button type="button" class="r" data-a="doremove" style="background:var(--red);color:#fff">Togli il blocco</button></div>');
+}
+async function viewAskBio(){
+  var sup=await bioSupported();
+  if(!sup){closeDlg();refresh();return}
+  openDlg('<h2>Blocco attivato</h2><p>Vuoi entrare anche con Face ID o Touch ID, senza digitare il PIN?</p><p class="alk-msg" role="alert"></p><div class="alk-row"><button type="button" class="g" data-a="skipbio">Non ora</button><button type="button" data-a="bioon2">Attiva Face ID</button></div>');
+}
+function val(id){var e=dlg&&dlg.querySelector('#'+id);return e?e.value:''}
+async function onDlgClick(e){
+  if(e.target===dlg){closeDlg();refresh();return}
+  var b=e.target.closest&&e.target.closest('[data-a]');if(!b)return;
+  var a=b.getAttribute('data-a'),o=get();
+  if(a==='close'||a==='skipbio'){closeDlg();refresh();return}
+  if(a==='back'){viewOn();return}
+  if(a==='chpin'){viewChange();return}
+  if(a==='remove'){viewRemove();return}
+  if(a==='enable'){
+    var p1=val('alk-n1'),p2=val('alk-n2');
+    if(!/^\d{4,6}$/.test(p1)){msg('Il PIN deve avere da 4 a 6 cifre.');return}
+    if(p1!==p2){msg('I due PIN non coincidono.');return}
+    var s=b64(rnd(16)),h=await hashPin(p1,s);
+    if(!put({v:1,s:s,h:h,l:p1.length,bio:'',a:60})){msg('Non riesco a salvare il blocco su questo dispositivo.');return}
+    fput({n:0,until:0});refresh();viewAskBio();return;
+  }
+  if(a==='dochange'){
+    if(!(await checkPin(val('alk-c0')))){msg('Il PIN attuale non è corretto.');return}
+    var n1=val('alk-n1'),n2=val('alk-n2');
+    if(!/^\d{4,6}$/.test(n1)){msg('Il nuovo PIN deve avere da 4 a 6 cifre.');return}
+    if(n1!==n2){msg('I due PIN non coincidono.');return}
+    var s2=b64(rnd(16)),h2=await hashPin(n1,s2);
+    o.s=s2;o.h=h2;o.l=n1.length;put(o);viewOn();return;
+  }
+  if(a==='doremove'){
+    if(!(await checkPin(val('alk-c0')))){msg('Il PIN attuale non è corretto.');return}
+    put(null);fput({n:0,until:0});closeDlg();refresh();return;
+  }
+  if(a==='bioon'||a==='bioon2'){
+    try{var id=await bioRegister();o.bio=id;put(o);if(a==='bioon2'){closeDlg();refresh()}else viewOn()}
+    catch(err){msg('Non sono riuscito ad attivare Face ID / Touch ID. Controlla che sia impostato sul telefono e che l’app abbia il permesso.')}
+    return;
+  }
+  if(a==='biooff'){o.bio='';put(o);viewOn();return}
+}
+document.addEventListener('change',function(e){
+  if(e.target&&e.target.id==='alk-a'){var o=get();if(o){o.a=parseInt(e.target.value,10)||0;put(o)}}
+},true);
+document.addEventListener('click',function(e){
+  var t=e.target.closest&&e.target.closest('[data-act="applock"]');if(!t)return;
+  e.preventDefault();e.stopPropagation();
+  if(enabled())viewOn();else viewOff();
+},true);
+window.AgendaLock={enabled:enabled,label:function(){var o=get();return o?('Attivo'+(o.bio?' · PIN e Face ID':' · PIN')):'Non attivo'}};
+/* all’avvio: se il blocco è attivo, copro subito l’agenda */
+if(enabled()){root.classList.add('alk-on');showLock()}
+})();
+</script>
 <main id="app"><div id="view"><div class="sbar"><span class="schoolb"><span class="sn">La mia scuola</span></span></div><h1>Agenda docente</h1><p class="sub">Se resti su questa frase, tocca Condividi e poi Safari. L’anteprima di File non avvia l’agenda.</p></div></main>
 <button class="fab" id="fab" data-act="fab" aria-label="Aggiungi"></button>
 <nav aria-label="Sezioni"><div class="navin" id="nav"></div></nav>
@@ -727,6 +996,7 @@ phone:'<path d="M5 4.5h3.5L10 9 8 10.3a11 11 0 0 0 5.7 5.7L15 14l4.5 1.5V19a1.5 
   pause:'<path d="M7.5 5.5v13M16.5 5.5v13"/>',
   sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   sun:'<circle class="t" cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
+  lock:'<rect class="t" x="5" y="10.5" width="14" height="9.5" rx="3"/><rect x="5" y="10.5" width="14" height="9.5" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   shield:'<path class="t" d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/>',
   bell:'<path class="t" d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   noshow:'<rect class="t" x="4" y="5" width="16" height="15.5" rx="4"/><rect x="4" y="5" width="16" height="15.5" rx="4"/><path d="M4 10h16M9.5 14l5 4.5M14.5 14l-5 4.5"/>',
@@ -1121,7 +1391,7 @@ function migrate(){
   state.tasks.forEach(function(t){if(!t.type)t.type='altro';if(t.cls===undefined)t.cls=''});
   state.schools.forEach(function(sc){if(!sc.hours||sc.hours.length<1||sc.hours.length>12)sc.hours=defaultHours();var sp=Number(sc.split)||0;sc.splits=normSplits(Array.isArray(sc.splits)?sc.splits:(sp>0?[sp]:[]),sc.hours.length);delete sc.split});
   state.snotes=state.snotes||[];state.logs=state.logs||[];
-  state.remind=Object.assign({evMin:'15',evEve:true,evEveTime:'20:00',tkEve:true,tkEveTime:'20:00',tkMorn:true,tkMornTime:'08:00',colMin:'10',colEve:true,colEveTime:'20:00'},state.remind||{});
+  state.remind=Object.assign({evMin:'15',evEve:true,evEveTime:'20:00',tkEve:true,tkEveTime:'20:00',tkMorn:true,tkMornTime:'08:00',colMin:'10',colEve:true,colEveTime:'20:00',rollMiss:true,rollMissTime:'14:00'},state.remind||{});
   state.students.forEach(function(s){if(!s.tags)s.tags=[]});
   state.schools.forEach(function(sc){if(!sc.classColors)sc.classColors={};if(!sc.subjectColors)sc.subjectColors={}});
   state.lessons.forEach(function(l){
@@ -1268,7 +1538,7 @@ function nextEvent(){
 }
 function timeCol(e){return e.start?esc(e.start)+(e.end?'<small>'+esc(e.end)+'</small>':''):'<small>Tutto il giorno</small>'}
 function eventRow(e){
-  return '<button class="rowbtn swr" data-swk="event" data-swid="'+e.id+'" data-act="edit" data-kind="event" data-id="'+e.id+'"><span class="time">'+timeCol(e)+'</span><span class="bar '+(TIPO_COL[e.type]||'')+'"></span><span class="grow"><span class="t">'+esc(e.title)+tag(e)+'</span><span class="m">'+esc(TIPI[e.type]||'')+(e.place?', '+esc(e.place):'')+'</span></span><span class="chev">'+ic('edit',18)+'</span></button>';
+  return '<button class="rowbtn swr" data-swk="event" data-swid="'+e.id+'" data-act="edit" data-kind="event" data-id="'+e.id+'"><span class="time">'+timeCol(e)+'</span><span class="bar '+(TIPO_COL[e.type]||'')+'"></span><span class="grow"><span class="t">'+esc(e.title)+tag(e)+evDoneChip(e.id)+'</span><span class="m">'+esc(TIPI[e.type]||'')+(e.place?', '+esc(e.place):'')+'</span></span><span class="chev">'+ic('edit',18)+'</span></button>';
 }
 function dueChip(due,done){
   var n=diff(due);var d=parse(due);
@@ -1401,14 +1671,14 @@ function vOggi0(){
   var items=ls.map(function(l){return {k:'lesson',start:l.start,end:l.end,title:l.subject,sub:'Classe '+l.cls+(l.room?', aula '+l.room:''),id:l.id,col:classColorKey(l.school,l.cls),tg:tag(l),hasLog:!!(state.logs.some(function(g){return g.lessonId===l.id&&g.date===selIso})||logForLesson(l,selIso)),hasRoll:rollDone(l,selIso)}})
     .concat(collDayItems(selIso)).concat(evs.map(function(e){return {k:'event',start:e.start,end:e.end,title:e.title,sub:(TIPI[e.type]||'')+(e.place?', '+e.place:''),id:e.id,col:TIPO_COL[e.type]||'',tg:tag(e)}}))
     .sort(byStart);
-  var curIt=null;if(selIso===today){curIt=items.filter(function(it){return it.k==='lesson'&&it.start&&it.start<=hm&&(it.end||'99:99')>hm})[0]||null}h+='<h2 class="dayh">La giornata</h2>'+'<div class="daybox">';
+  var curIt=null;if(selIso===today){curIt=items.filter(function(it){return it.k==='lesson'&&it.start&&it.start<=hm&&(it.end||'99:99')>hm})[0]||null}var rmiss=(selIso===today&&state.remind&&state.remind.rollMiss&&hm>=(state.remind.rollMissTime||'14:00'))?rollMissing(today,hm):[];if(rmiss.length){h+='<h2 class="dayh">Appello da fare</h2><div class="calcards">'+rmiss.map(function(l){return '<button type="button" class="rowbtn" data-act="lhub" data-d="'+today+'" data-kind="lesson" data-id="'+l.id+'" aria-label="Apri la lezione: appello da fare"><span class="grow"><span class="t">Classe '+esc(l.cls)+'</span><span class="m">'+esc(l.subject||'')+(l.start?' · '+esc(l.start):'')+'</span></span><span class="chev">'+ic('right',20)+'</span></button>'}).join('')+'</div>'}h+='<h2 class="dayh">La giornata</h2>'+'<div class="daybox">';
   if(items.length){
     h+=items.map(function(it){if(curIt&&it===curIt)return '<div class="cwrap">'+curCard(it)+toolsRow(curIt,items,hm)+'</div>';
       var on=selIso===today&&it.start&&it.start<=hm&&(it.endc||it.end||'99:99')>hm;
       if(it.k==='collday')return collDayRow(it,on);if(on&&it.k!=='lesson')return nowCard(it,it.k==='coll'?'colledit':'edit',selIso);var act=it.k==='lesson'?'lhub':(it.k==='collday'?'colldays':(it.k==='coll'?'colledit':'edit'));
       var lbl=it.k==='lesson'?'Apri la lezione: scheda, verifica o voti, elenco classe':(it.k==='collday'?'Apri i colloqui del giorno':'Modifica');
       var ba=barAttrs(it.col);
-      return '<button class="rowbtn'+(it.k==='event'||it.k==='coll'?' swr" data-swk="'+it.k+'" data-swid="'+it.id:'')+'" data-act="'+act+'" data-d="'+selIso+'" data-kind="'+it.k+'" data-id="'+it.id+'" aria-label="'+lbl+': '+esc(it.title)+'"><span class="time">'+(it.start?esc(it.start)+(it.end?'<small>'+esc(it.end)+'</small>':''):'<small>Tutto il giorno</small>')+'</span><span class="'+ba.cls+'"'+ba.style+'></span><span class="grow"><span class="t">'+esc(it.title)+it.tg+(on?'<span class="chip now">In corso</span>':'')+(it.hasLog?'<span class="chip green">Annotata</span>':'')+(it.hasRoll?'<span class="chip green">Appello fatto</span>':'')+'</span><span class="m">'+esc(it.sub)+'</span></span>'+(it.k==='lesson'?'':'<span class="chev">'+ic('edit',18)+'</span>')+'</button>';
+      return '<button class="rowbtn'+(it.k==='event'||it.k==='coll'?' swr" data-swk="'+it.k+'" data-swid="'+it.id:'')+'" data-act="'+act+'" data-d="'+selIso+'" data-kind="'+it.k+'" data-id="'+it.id+'" aria-label="'+lbl+': '+esc(it.title)+'"><span class="time">'+(it.start?esc(it.start)+(it.end?'<small>'+esc(it.end)+'</small>':''):'<small>Tutto il giorno</small>')+'</span><span class="'+ba.cls+'"'+ba.style+'></span><span class="grow"><span class="t">'+esc(it.title)+it.tg+(on?'<span class="chip now">In corso</span>':'')+(it.hasLog?'<span class="chip green">Annotata</span>':'')+(it.hasRoll?'<span class="chip green">Appello fatto</span>':'')+(it.k==='event'?evDoneChip(it.id):'')+'</span><span class="m">'+esc(it.sub)+'</span></span>'+(it.k==='lesson'?'':'<span class="chev">'+ic('edit',18)+'</span>')+'</button>';
     }).join('');
   }else{
     h+='<p class="m empty">Giornata libera. Inserisci le tue lezioni nell\'orario o aggiungi un impegno con il pulsante +.</p><button class="opill" data-act="nav" data-v="ord">'+ic('clock',18)+'Apri l\'orario</button>';
@@ -1788,6 +2058,7 @@ function vSettings(){
   var h=backLink()+'<h1>Impostazioni</h1><p class="sub">Il tuo profilo e le preferenze dell\'app.</p>';
   h+='<div class="calcards" style="margin-top:12px"><button class="rowbtn mid" data-act="nav" data-v="profilo"><span class="hi">'+ic('user',24)+'</span><span class="grow"><span class="t">Profilo</span><span class="m">Account e invita un collega</span></span><span class="chev">'+ic('right',20)+'</span></button><button class="rowbtn mid" data-act="nav" data-v="remind"><span class="hi">'+ic('bell',24)+'</span><span class="grow"><span class="t">Promemoria</span><span class="m">Avvisi per impegni e attività in scadenza</span></span><span class="chev">'+ic('right',20)+'</span></button><button class="rowbtn mid" data-act="nav" data-v="backup"><span class="hi">'+ic('download',24)+'</span><span class="grow"><span class="t">Dati e backup</span><span class="m">Crea un backup o ripristina i tuoi dati</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   h+='<div class="calcards" style="margin-top:10px"><div class="rowbtn mid" style="cursor:default"><span class="hi">'+ic('sun',24)+'</span><span class="grow"><span class="t">Aspetto</span></span><label class="rmrow" style="border:0;padding:0;width:auto"><select id="st-theme" aria-label="Tema">'+[['auto','Come il telefono'],['light','Chiaro'],['dark','Scuro']].map(function(o){return '<option value="'+o[0]+'"'+(th===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label></div></div>';
+  h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="applock"><span class="hi">'+ic('lock',24)+'</span><span class="grow"><span class="t">Blocco app</span><span class="m">'+esc(window.AgendaLock?window.AgendaLock.label():'Non attivo')+'</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   if(bkMsg){h+='<p class="m" role="status" style="margin-top:10px">'+esc(bkMsg)+'</p>';bkMsg=''}
   h+='<div style="margin-top:12px">';
   h+='<div class="calcards" style="margin-top:0"><button class="rowbtn mid" data-act="nav" data-v="privacy"><span class="hi">'+ic('shield',24)+'</span><span class="grow"><span class="t">Privacy</span><span class="m">Informativa ed elimina dati</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
@@ -1873,6 +2144,7 @@ async function restoreBackup(){
 }
 
 /* ---------- promemoria ---------- */
+function rollMissing(day,lim){if(offDay(day))return [];var ls=lessonsFor(parse(day).getDay()),seen={},out=[];ls.forEach(function(l){if((l.end||l.start||'99:99')>lim)return;var c=clsOfLesson(l);if(!c||!studsOf(c.id).length)return;if(rollDone(l,day))return;var k=l.school+'|'+l.cls;if(seen[k])return;seen[k]=1;out.push(l)});return out}
 function remindItems(){
   var today=iso(new Date());
   return {evs:state.events.filter(function(e){return inS(e)&&e.date>=today}),
@@ -1892,6 +2164,7 @@ function vRemind(){
   h+='<div class="rm"><h2>Colloqui individuali</h2>'+
     '<div class="rmrow"><span>Prima del colloquio</span><select id="rm-colMin" aria-label="Avviso prima del colloquio">'+[['0','Nessun avviso'],['5','5 minuti prima'],['10','10 minuti prima'],['15','15 minuti prima'],['30','30 minuti prima'],['60','1 ora prima']].map(function(m){return '<option value="'+m[0]+'"'+(String(c.colMin)===m[0]?' selected':'')+'>'+m[1]+'</option>'}).join('')+'</select></div>'+
     rmCheck('colEve','La sera prima (riepilogo) alle',c.colEve,'colEveTime',c.colEveTime)+'</div>';
+  h+='<div class="rm"><h2>Appello</h2>'+rmCheck('rollMiss','Avvisami se manca l\'appello alle',c.rollMiss,'rollMissTime',c.rollMissTime)+'</div>';
   h+='<div class="rm"><h2>Attivit\u00e0 in scadenza</h2>'+
     rmCheck('tkEve','La sera prima alle',c.tkEve,'tkEveTime',c.tkEveTime)+
     rmCheck('tkMorn','Il giorno della scadenza alle',c.tkMorn,'tkMornTime',c.tkMornTime)+'</div>';
@@ -2127,6 +2400,7 @@ function reminderPlan(){
       if(w3>now){var en=g.map(function(q){return q.end||q.time}).sort().pop();out.push({tag:'co-'+d+'-eve',when:w3,title:'Domani: colloqui individuali',body:g.length+(g.length===1?' colloquio':' colloqui')+' \u00b7 dalle '+f.time+(en&&en>f.time?' alle '+en:'')})}
     });
   }
+  if(c.rollMiss&&c.rollMissTime){var tdr=iso(new Date()),wr=atTime(tdr,c.rollMissTime).getTime();if(wr>now){var rl=rollMissing(tdr,c.rollMissTime);if(rl.length){var nmr=[];rl.forEach(function(l){if(nmr.indexOf(l.cls)<0)nmr.push(l.cls)});out.push({tag:'roll-'+tdr,when:wr,title:'Appello non fatto',body:'Classe '+nmr.join(', ')})}}}
   out.sort(function(a,b){return a.when-b.when});
   return out.slice(0,40);
 }
@@ -2471,6 +2745,10 @@ function openColl(id,sid,dt){
   if(cS)cS.addEventListener('change',collSum);
 }
 function isCollDone(x){return x.done===true||(x.done===undefined&&!!String(x.esito||'').trim())}
+var EV_COLL={collegio:1,consiglio:1};
+function evById(id){return (state.events||[]).filter(function(x){return x&&x.id===id})[0]}
+function isEvDone(e){return !!e&&(EV_COLL[e.type]?e.pres==='si':e.done===true)}
+function evDoneChip(id){return isEvDone(evById(id))?'<span class="chip green">Fatto</span>':''}
 function collDoneDate(x){return x.doneDate||(isCollDone(x)?x.date:iso(new Date()))}
 function collDoneTog(){var c=document.getElementById('cl-done'),w=document.getElementById('cl-donewrap'),d=document.getElementById('cl-donedate');if(!c||!w)return;w.style.display=c.checked?'':'none';if(c.checked&&d&&!d.value)d.value=iso(new Date())}
 function saveColl(){
@@ -5857,6 +6135,8 @@ async function onAgendaClick(e){
   else if(a==='stuaddrow'){stuAddRow(true)}else if(a==='save')saveSheet();
   else if(a==='close'){var wasColors=sheet&&sheet.kind==='colors';closeSheet();if(wasColors)render()}
   else if(a==='del')delSheet();
+  else if(a==='swdone'&&el.dataset.swk==='event'){var evd=evById(el.dataset.swid);if(evd){if(isEvDone(evd)){evd.done=false;if(EV_COLL[evd.type])delete evd.pres}else{evd.done=true;if(EV_COLL[evd.type])evd.pres='si'}save();render()}}
+  else if(a==='swdone'){var dq=(state.collq||[]).filter(function(x){return x.id===el.dataset.swid})[0];if(dq){if(isCollDone(dq)){dq.done=false;dq.doneDate=''}else{dq.done=true;dq.doneDate=iso(new Date())}save();render()}}
   else if(a==='swedit'){if(el.dataset.swk==='subj'){var sp=el.dataset.swid.split('::');openSubjPick(sp[0],sp.slice(1).join('::'))}else if(el.dataset.swk==='log')openLogEdit(el.dataset.swid);else if(el.dataset.swk==='coll')openColl(el.dataset.swid);else openSheet(el.dataset.swk,el.dataset.swid)}
   else if(a==='swdel'){if(el.dataset.swk==='subj'){var sq=el.dataset.swid.split('::');subjDelete(sq[0],sq.slice(1).join('::'))}else swDelete(el.dataset.swk,el.dataset.swid)}
   else if(a==='rvall')toggleAllRv(el);
@@ -6101,6 +6381,7 @@ function onAgendaInput(e){
 }
 function onAgendaKey(e){if(e.key==='Escape'&&!sheet&&document.getElementById('srch')){closeSearch();return}if(e.key==='Escape'&&sheet)closeSheet()}
 var pickUntil=0;
+window.__agendaRender=function(){render()};window.__agendaPicking=function(){return Date.now()<pickUntil};
 document.addEventListener('click',function(e){
   var el=e.target;if(!el||!el.closest)return;
   var inp=(el.tagName==='INPUT'&&el.type==='file')?el:null;
@@ -6293,7 +6574,8 @@ function swDelete(kind,id){
   function acts(r){
     if(r.querySelector('.swa'))return;
     var k=r.dataset.swk,id=r.dataset.swid;
-    r.insertAdjacentHTML('beforeend','<span class="swa"><span class="swb e" role="button" data-act="swedit" data-swk="'+k+'" data-swid="'+id+'">'+ic('edit',18)+'Modifica</span><span class="swb d" role="button" data-act="swdel" data-swk="'+k+'" data-swid="'+id+'">'+ic('trash',18)+'Elimina</span></span>');
+    var first=(k==='coll'||k==='event'?(function(){var q=(state.collq||[]).filter(function(x){return x.id===id})[0],dn=k==='event'?isEvDone(evById(id)):(q&&isCollDone(q));return '<span class="swb g" role="button" data-act="swdone" data-swk="'+k+'" data-swid="'+id+'">'+ic('tick',28)+(dn?'Da fare':'Fatto')+'</span>'})():'<span class="swb e" role="button" data-act="swedit" data-swk="'+k+'" data-swid="'+id+'">'+ic('edit',18)+'Modifica</span>');
+    r.insertAdjacentHTML('beforeend','<span class="swa">'+first+'<span class="swb d" role="button" data-act="swdel" data-swk="'+k+'" data-swid="'+id+'">'+ic('trash',18)+'Elimina</span></span>');
   }
   function closeRow(r,anim){
     if(!r)return;
