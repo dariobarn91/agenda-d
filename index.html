@@ -593,6 +593,9 @@ Stile morbido (vale per Oggi, Calendario e Orario):
 - Moduli (i fogli che si aprono dal basso: Nuovo impegno, voto, alunno, ecc.): angoli in alto 28px, titolo 19px. Campi di testo, data, ora, menù a tendina e note senza bordo, fondo grigio chiarissimo, angoli 12px, alti almeno 46px; quando sono attivi diventano bianchi con un contorno blu di 2px. Etichette sopra i campi 13px in grassetto. In fondo, pulsanti alti 46px: “Salva” blu con ombra, “Annulla” grigio chiaro.
 - I fogli si chiudono anche trascinandoli verso il basso partendo da un campo di testo, se il movimento è chiaramente verso il basso (il cursore non si sposta); chiudendoli si chiude anche la tastiera. Una casella di testo lunga che scorre mantiene il suo scorrimento.
 - Navigazione: si passa da Oggi a Calendario, Orario, Classi e Altro anche trascinando il dito a destra e a sinistra sullo schermo. Trascinando sulla barra in basso la pagina cambia solo quando si stacca il dito. I fogli si chiudono trascinandoli verso il basso.
+- Gesti sulle righe: trascinando una riga verso sinistra compaiono i pulsanti a destra, ognuno con icona e scritta. Nei colloqui sono tre: Fatto (verde chiaro, una sola spunta grande), Non ricevuto (giallo, per il genitore che non si è presentato o collegato) ed Elimina (rosso). Sulle righe già fatte il primo pulsante diventa “Da fare”; su quelle non ricevute il pulsante giallo diventa “Da fare”. Negli impegni del calendario sono due: Fatto (poi “Da fare”) ed Elimina. Nelle altre liste restano Modifica ed Elimina.
+- Animazioni dei gesti, brevi (meno di un secondo): con Fatto la riga si copre di verde chiaro con una spunta grande che compare con un piccolo rimbalzo; con Non ricevuto di giallo con l’icona dell’assenza; con Elimina di rosso chiaro con un cestino che si scuote. Nei colloqui, poi, la riga si restringe e sfuma. Per gli impegni del calendario la riga resta e compare l’etichetta verde “Fatto”. Se nelle impostazioni del telefono è attivo “Riduci movimento”, niente animazione.
+- Dopo Elimina compare in basso, per qualche secondo, “Eliminato.” con il pulsante Annulla, che rimette tutto com’era. Dopo Fatto e Non ricevuto non compare nessun avviso.
 
 ## 3. Ingresso
 
@@ -616,6 +619,7 @@ Altro, elenco di righe:
 | Strumenti pratici | Squadre, gruppi, timer e cronometro |
 | Assenze e permessi | Malattia, permessi e altre assenze: il conto dell’anno |
 | Ore collegiali | Le 40 ore di collegio docenti e le 40 di consigli di classe, contate dagli impegni |
+| Colloqui individuali | Prepara i colloqui con le famiglie e archivia gli esiti |
 | Supplenze | Ore extra pagate e recuperi orario, con il totale dell’anno |
 | Annotazioni | Scrivi qualsiasi cosa da ricordare |
 | Archivio documenti | Impegni dal calendario, moduli, materiali e link |
@@ -630,8 +634,9 @@ Impostazioni, in ordine, senza riquadri extra tranne l’account:
 1. Riquadro Account: cerchio con l’iniziale, nome «Docente» e «Su questo dispositivo» di fianco al cerchio, non sotto. Testo: i dati restano su questo dispositivo. Pulsante “Crea un codice di recupero”: è solo un appunto, non serve a rientrare da un altro telefono.
 2. Promemoria, riga con campanella.
 3. Aspetto, riga con sole e menu a tendina: Come il telefono / Chiaro / Scuro. Una sola linea sotto.
-4. Privacy, riga con scudo: “Informativa ed elimina dati”.
-5. Esci dall’account, riga con icona di uscita. Non chiude una sessione: avvisa che non c’è un accesso e che i dati restano su questo dispositivo.
+4. Blocco app, riga con lucchetto: sotto il titolo dice “Non attivo” oppure “Attivo · PIN” / “Attivo · PIN e Face ID”. Tocca per aprire il riquadro del blocco (vedi sezione 11).
+5. Privacy, riga con scudo: “Informativa ed elimina dati”.
+6. Esci dall’account, riga con icona di uscita. Non chiude una sessione: avvisa che non c’è un accesso e che i dati restano su questo dispositivo.
 
 Archivio documenti, cinque tab sulla stessa riga, testo che deve stare tutto, senza tagli: Impegni, Moduli, Materiali, Foto, Link.
 
@@ -690,6 +695,8 @@ Lezioni: prima la lista delle classi. Testo: “Scegli una classe per vedere e a
 Dentro una classe: “Cambia classe”, il mese, poi “Classe 1C Frank · Mercoledì 9 settembre” con una pillola **PDF** accanto al titolo. Per quel giorno si vedono, in schede con la striscia colorata a sinistra, le ore dell’orario e le schede già scritte. Chip “Fatta” se c’è un argomento. Vuoto: “Nessuna lezione di questa classe in questo giorno.” Più “Aggiungi scheda lezione”. Il PDF elenca data, materia, argomento e note della classe in cui sei; se non ci sono schede avvisa e non crea un file vuoto.
 
 Se è selezionato “Tutte le scuole”, il calendario lezioni dice di scegliere una scuola.
+
+**Fatto sugli impegni.** Trascinando la riga di un impegno compare Fatto; l’impegno mostra l’etichetta verde “Fatto” e “Da fare” lo toglie. Per i Collegi docenti e i Consigli di classe, Fatto li segna anche “Presente” in Ore collegiali e le ore vengono contate; “Da fare” toglie la presenza. Vale anche al contrario: se in Ore collegiali tocchi “Presente”, nel calendario risultano “Fatto”. Se li segni “Assente” non risultano fatti. Se un consiglio segnato assente viene poi trascinato su Fatto, diventa presente.
 
 ## 8. Orario
 
@@ -755,6 +762,19 @@ Esporta in PDF: un menu a tendina per scegliere tra Lezioni (le schede lezione),
 
 **Assenze e permessi.** Anno scolastico dal 1 settembre al 31 agosto. In cima il totale giorni per tipo: Malattia, Permesso retribuito, Legge 104, Altro. Poi il registro, dal più recente. Campi: data, tipo, giorni (1 o 0,5), motivo. Il + aggiunge una voce.
 
+**Colloqui individuali** (Altro, icona fumetto, sottotitolo “Prepara i colloqui con le famiglie e archivia gli esiti”). Titolo “Colloqui individuali”, sotto: “Prepara il colloquio e scrivi l’esito: lo ritrovi anche nella scheda dell’alunno.”. Due pulsanti: “Nuovo colloquio” (blu, con il più) e “Genera orari” (chiaro, con l’orologio). Gli elenchi sono schede bianche, in questo ordine e solo se non vuoti:
+
+1. **Prossimi**, divisi per giorno. Sopra ogni gruppo un’intestazione piccola e grigia con giorno e numero di colloqui: “Oggi · 3 colloqui”, “Domani · 2 colloqui”, poi “Venerdì 27 novembre · 2 colloqui”. Nei gruppi la riga mostra solo l’orario (“10:50 – 10:57”), perché il giorno è già nell’intestazione. Ordine per data e ora. Un colloquio non ricevuto non compare qui.
+2. **Da segnare come fatti**: colloqui con la data passata, non ancora fatti né non ricevuti.
+3. **Fatti**: i più recenti prima. Sotto l’orario: “Fatto oggi” se è stato segnato oggi, altrimenti “Fatto il lunedì 16 novembre” (giorno in minuscolo).
+4. **Non ricevuti**: il genitore non si è presentato o collegato. Sotto l’orario la scritta “Non ricevuto” in grassetto.
+
+In fondo la pillola “Elimina tutti”. Ogni riga: nome alunno e classe (“Rossi M. · 1A”), data e orario, l’esito in breve (fino a 90 caratteri), matita “Modifica” a destra. Toccare il nome apre la scheda dell’alunno. Lo scorrimento della riga e le sue animazioni sono nella sezione 2.
+
+Modulo del colloquio: Alunno (menu per classe) con sotto “Media · voti · assenze”; Data; Inizio e Fine facoltativi (la fine si calcola da sola dalla durata); “Cosa devo dire”; “Esito e cose da riprendere”; casella “Colloquio fatto” (con “Fatto il” e la data); casella “Non ricevuto (genitore assente o non collegato)”. Le due caselle non possono essere attive insieme: toccandone una si toglie l’altra. Un colloquio non ricevuto non genera promemoria e non compare tra i prossimi impegni di Oggi; nella scheda dell’alunno “Ultimo colloquio” dice “non ricevuto”.
+
+“Genera orari”: Data, Dalle (15:00), Alle (18:00), Durata di ogni colloquio (da 1 a 20 minuti, di base 10), con l’anteprima di quante caselle crea. “Crea le caselle” prepara colloqui senza alunno; poi se ne assegna uno a ciascuno.
+
 **Annotazioni.** Elenco per data di modifica. Titolo facoltativo e testo. Tocca per modificare.
 
 **Archivio.**
@@ -788,11 +808,20 @@ Due pillole azzurre:
 
 Privacy: informativa in italiano (account, dati dell’agenda, alunni, file, lettura documenti, notifiche, cosa non facciamo). In fondo il pulsante con il cestino **nella stessa riga** del testo: “Elimina tutti i miei dati”. Il pulsante è una pillola rosso chiaro. Poi conferma: “Confermi? Elimina tutto, senza ritorno” (pillola rossa) e Annulla (pillola azzurra). Cancella l’agenda di quell’account e i file, e torna a una scuola vuota “La mia scuola”.
 
+**Blocco app.** In Impostazioni, riga “Blocco app” (lucchetto). Si apre un riquadro al centro:
+
+- Se il blocco non c’è: “Blocco con PIN”, spiega che all’apertura verrà chiesto un PIN di 4–6 cifre e, se il telefono lo permette, anche Face ID o Touch ID. Campi “Nuovo PIN” e “Ripeti il PIN” (puntini, tastiera numerica), pulsanti “Annulla” e “Attiva blocco”. Dopo averlo attivato, se il telefono lo supporta, chiede “Vuoi entrare anche con Face ID o Touch ID?” con “Non ora” e “Attiva Face ID”.
+- Se c’è: “Blocco app attivo”, “PIN di N cifre”, riga “Face ID / Touch ID” con Attiva o Disattiva (se non disponibile: “Non disponibile su questo dispositivo o browser”), il menu “Blocca quando esci dall’app” (Subito, Dopo 1 minuto, Dopo 5 minuti, Dopo 15 minuti, di base 1 minuto), “Cambia PIN” (chiede quello attuale) e “Togli il blocco” (rosso, chiede il PIN attuale).
+
+Schermata di blocco: a tutto schermo, sopra qualsiasi cosa, con lo stesso sfondo e colori del tema scelto nell’app (si applica prima di mostrarla, altrimenti con il telefono in scuro e l’app in chiaro la barra in alto resta scura). Quadrato azzurro con il lucchetto, “Agenda docente”, “Inserisci il PIN per entrare”, i puntini del PIN, tastiera 1–9, 0 e cancella, poi il pulsante “Usa Face ID / Touch ID” (se attivo) e “PIN dimenticato?”. Il PIN si inserisce anche dalla tastiera del computer. Con Face ID attivo parte da solo all’apertura. Si blocca a ogni apertura da zero e quando si torna all’app dopo il tempo scelto; appena l’app va in secondo piano il contenuto viene coperto. Non si blocca mentre si sceglie un file o si scatta una foto. PIN errato: puntini che scuotono e “PIN errato”; dopo 5 errori attesa di 30 secondi, che raddoppia a ogni nuovo gruppo di 5 (massimo 15 minuti). “PIN dimenticato?”: spiega che con Face ID si entra e si cambia il PIN; altrimenti si può azzerare il dispositivo (con due conferme): il blocco e i dati salvati sul telefono vengono cancellati. Non c’è altro modo di recuperare il PIN.
+
+Il PIN si salva solo come impronta (PBKDF2 con sale casuale, 120.000 giri), mai in chiaro, solo su questo dispositivo: non va nell’account, né nei dati sincronizzati. Face ID usa la passkey del telefono: iOS mostra “Usa la passkey” prima di chiedere il volto e non si può togliere. È un blocco dello schermo, non una cifratura: i dati restano nel browser.
+
 ## 12. Dati e due dispositivi
 
 Tutto è in italiano. Date scritte “9 settembre”, non in formato americano. Voti con la virgola.
 
-Oggetti, ciascuno con un id: scuole, ore, colori di classe e materia, lezioni dell’orario, impegni, schede lezione, attività, classi, alunni, voti, annotazioni alunno, assenze, note, contatti, link, archivio, preferenze (tema, promemoria, ultima scuola, tab aperti).
+Oggetti, ciascuno con un id: scuole, ore, colori di classe e materia, lezioni dell’orario, impegni, schede lezione, attività, classi, alunni, voti, annotazioni alunno, assenze, colloqui (alunno, data, orario, cosa dire, esito, fatto o non ricevuto), note, contatti, link, archivio, preferenze (tema, promemoria, ultima scuola, tab aperti).
 
 Salvataggio sull’account. Se telefono e computer salvano in momenti diversi:
 
@@ -816,6 +845,11 @@ All’uscita i dati restano sull’account. Un altro account, anche sullo stesso
 - Non allineare nome ed email sotto il cerchio: stanno di fianco.
 - Non mostrare i dati di esempio come se fossero dell’utente, dopo il login reale l’agenda parte vuota o con i suoi dati.
 - Lingua dell’interfaccia: italiano, tono diretto, niente inglese nei pulsanti.
+- Non mostrare “Fatto il oggi”: se è oggi, “Fatto oggi”.
+- Non mettere i colloqui non ricevuti tra i Prossimi né tra i Fatti: hanno la loro sezione.
+- Non mettere un avviso con Annulla dopo Fatto o Non ricevuto: solo dopo Elimina.
+- Non salvare il PIN in chiaro e non mandarlo sull’account.
+- Non lasciare che la schermata di blocco compaia nel tema sbagliato: il tema scelto si applica prima.
 
 ## Come è fatto questo file
 
@@ -823,7 +857,7 @@ Un solo file HTML. Aprilo nel browser: è l’app. I dati restano su questo disp
 
 Per rifarla uguale segui le sezioni 1–13. L’aspetto è nel blocco `<style>`, le schermate e le funzioni sono nello script `engine`. Non aggiungere sezioni. Non tradurre in inglese. Nome visibile: Agenda docente.
 
-Novità di questa copia: nessun login. Avvio diretto su Oggi. Salvataggio locale. Il codice di recupero è solo locale. La lettura dei documenti resta sul dispositivo, senza invio a un servizio esterno.
+Novità di questa copia: blocco con PIN e Face ID, Fatto sugli impegni, colloqui non ricevuti e divisi per giorno, animazioni sui gesti. Nessun login. Avvio diretto su Oggi. Salvataggio locale. Il codice di recupero è solo locale. La lettura dei documenti resta sul dispositivo, senza invio a un servizio esterno.
 
 
 </script>
@@ -2744,13 +2778,13 @@ function openColl(id,sid,dt){
   var v=q||{sid:sid||'',date:dt||iso(new Date()),time:'',prep:'',esito:''};
   sheet={kind:'coll',id:id||null};
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Colloquio"><h2>'+(q?'Colloquio':'Nuovo colloquio')+'</h2>'+
-    '<div class="f"><label for="cl-stu">Alunno</label><select id="cl-stu" onchange="collSum()">'+(v.sid?'':'<option value="">Scegli\u2026</option>')+collStuOptions(v.sid)+'</select></div>'+
+    '<div class="f"><label for="cl-stu">Alunno</label><select id="cl-stu">'+(v.sid?'':'<option value="">Scegli\u2026</option>')+collStuOptions(v.sid)+'</select></div>'+
     '<p class="m" id="cl-sum" style="margin:0 0 10px">'+collSumHTML(v.sid)+'</p>'+
     '<div class="f"><label for="cl-date">Data</label><input id="cl-date" type="date" value="'+esc(v.date)+'"></div>'+
-    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="cl-time">Inizio (facoltativo)</label><input id="cl-time" type="time" onchange="collAutoEnd()" oninput="collAutoEnd()" onblur="collAutoEnd()" value="'+esc(v.time||'')+'"></div><div class="f" style="flex:1;min-width:0"><label for="cl-end">Fine (facoltativa)</label><input id="cl-end" type="time" onchange="this.dataset.auto=0" value="'+esc(v.end||'')+'"></div></div>'+
+    '<div style="display:flex;gap:10px"><div class="f" style="flex:1;min-width:0"><label for="cl-time">Inizio (facoltativo)</label><input id="cl-time" type="time" value="'+esc(v.time||'')+'"></div><div class="f" style="flex:1;min-width:0"><label for="cl-end">Fine (facoltativa)</label><input id="cl-end" type="time" onchange="this.dataset.auto=0" value="'+esc(v.end||'')+'"></div></div>'+
     '<div class="f"><label for="cl-prep">Cosa devo dire</label><textarea id="cl-prep" rows="3">'+esc(v.prep||'')+'</textarea></div>'+
     '<div class="f"><label for="cl-esito">Esito e cose da riprendere</label><textarea id="cl-esito" rows="3">'+esc(v.esito||'')+'</textarea></div>'+
-    '<div class="rmrow" style="margin:0 0 10px"><label class="rl"><input type="checkbox" id="cl-done" onchange="collDoneTog()"'+(isCollDone(v)?' checked':'')+'><span>Colloquio fatto</span></label></div>'+
+    '<div class="rmrow" style="margin:0 0 10px"><label class="rl"><input type="checkbox" id="cl-done"'+(isCollDone(v)?' checked':'')+'><span>Colloquio fatto</span></label></div>'+
     '<div class="f" id="cl-donewrap" style="'+(isCollDone(v)?'':'display:none')+'"><label for="cl-donedate">Fatto il</label><input id="cl-donedate" type="date" value="'+esc(collDoneDate(v))+'"></div>'+
     '<div class="rmrow" style="margin:0 0 10px"><label class="rl"><input type="checkbox" id="cl-ns"'+(v.noshow===true?' checked':'')+'><span>Non ricevuto (genitore assente o non collegato)</span></label></div>'+
     '<div class="sbtns"><button class="btn" data-act="collsave">Salva</button><button class="btn ghost" data-act="close">Annulla</button>'+(q?'<span class="grow"></span><button class="btn danger" data-act="colldel" data-id="'+q.id+'">Elimina</button>':'')+'</div></div></div>';
