@@ -203,7 +203,20 @@ button.h1chev{border:0;outline:0;margin:0;cursor:pointer;-webkit-tap-highlight-c
 .calsj{display:flex;align-items:center;gap:10px;margin:10px 0 4px}.calsjn{font:800 26px var(--font-head);color:var(--ink)}
 .curcard .cc-t .cc-ann{display:inline-block;margin:0 0 0 10px;padding:3px 10px;vertical-align:middle;font-size:13px;white-space:nowrap;background:var(--green-bg);color:var(--green)}.curcard .cc-top{flex-wrap:wrap;row-gap:8px}.curcard .cc-top .cc-chips{flex:0 0 100%;order:3;display:flex;flex-wrap:wrap;gap:6px}.curcard .cc-top .cc-chips .cc-ann{margin:0;padding:3px 10px;font-size:12.5px}
 .lezchips{margin:6px 0 12px}
-</style><style id="offdays">.swb.g{background:var(--green-bg);color:var(--green)}.soft .daybox>.subjtray{background:var(--blue-bg);box-shadow:none;border-radius:0 0 22px 22px;margin-top:-26px;padding:36px 12px 14px;position:relative;z-index:0}.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.half{background:linear-gradient(135deg,var(--line) 50%,transparent 50%)}.day.half.today{background:linear-gradient(135deg,#7f8fd0 50%,var(--blue) 50%)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style></head>
+</style><style id="offdays">.swb.g{background:var(--green-bg);color:var(--green)}.soft .daybox>.subjtray{background:var(--blue-bg);box-shadow:none;border-radius:0 0 22px 22px;margin-top:-26px;padding:36px 12px 14px;position:relative;z-index:0}.day.off{background:var(--red-bg);color:var(--red)}.day.off.sel{box-shadow:inset 0 0 0 2px var(--red)}.day.half{background:linear-gradient(135deg,var(--line) 50%,transparent 50%)}.day.half.today{background:linear-gradient(135deg,#7f8fd0 50%,var(--blue) 50%)}.day.out{opacity:.4}.day.off.ill{background:var(--line);color:var(--ink2)}.day.off.ill.sel{box-shadow:inset 0 0 0 2px var(--ink2)}.day.off.today{background:var(--blue);color:var(--on-blue)}</style><style id="swok">
+.swr.swok{overflow:hidden!important;pointer-events:none}
+.swr.swok .swa{display:none!important}
+.swok-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--green-bg);color:var(--green);border-radius:inherit;animation:swokbg .22s ease-out both;z-index:3}
+.swok-ic svg{stroke-width:2.6;animation:swokpop .5s cubic-bezier(.2,1.7,.4,1) .05s both}
+.swr.swok-del .swok-ic{background:var(--red-bg);color:var(--red)}
+.swr.swok-del .swok-ic svg{animation:swokshake .5s ease-out .05s both}
+@keyframes swokshake{0%{transform:scale(.3);opacity:0}45%{transform:scale(1.2) rotate(-8deg);opacity:1}65%{transform:scale(1.1) rotate(7deg)}85%{transform:scale(1) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes swokbg{from{opacity:0}to{opacity:1}}
+@keyframes swokpop{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1)}}
+.swr.swok-out{transition:height .3s ease,opacity .3s ease,margin .3s ease,padding .3s ease;height:0!important;min-height:0!important;opacity:0;margin-top:0!important;margin-bottom:0!important}
+@media (prefers-reduced-motion:reduce){.swok-ic,.swok-ic svg{animation:none}}
+</style>
+</head>
 <body onload="avviaAgenda()">
 <style id="applock-css">
 html.alk-on #app,html.alk-on nav,html.alk-on #fab,html.alk-on #sheet{visibility:hidden!important}
@@ -3763,10 +3776,10 @@ function lhNew(){var l=state.lessons.filter(function(x){return x.id===sheet.less
 /* ---------- annulla dopo un'eliminazione ---------- */
 var undoGen=0,undoArm=-1,undoData=null,undoTimer=null;
 function hideUndo(){var e=document.getElementById('undobar');if(e)e.remove();if(undoTimer)clearTimeout(undoTimer);undoTimer=null;undoData=null;undoArm=-1}
-function showUndo(snap){
+function showUndo(snap,msg){
   hideUndo();if(!snap)return;undoData=snap;
   var d=document.createElement('div');d.id='undobar';d.setAttribute('role','status');
-  d.innerHTML='<span>Eliminato.</span><button type="button" data-act="undo">Annulla</button><i class="ubt"></i>';
+  d.innerHTML='<span>'+(msg||'Eliminato.')+'</span><button type="button" data-act="undo">Annulla</button><i class="ubt"></i>';
   document.body.appendChild(d);undoArm=undoGen;undoTimer=setTimeout(hideUndo,5000);
 }
 function doUndo(){
@@ -6135,10 +6148,10 @@ async function onAgendaClick(e){
   else if(a==='stuaddrow'){stuAddRow(true)}else if(a==='save')saveSheet();
   else if(a==='close'){var wasColors=sheet&&sheet.kind==='colors';closeSheet();if(wasColors)render()}
   else if(a==='del')delSheet();
-  else if(a==='swdone'&&el.dataset.swk==='event'){var evd=evById(el.dataset.swid);if(evd){if(isEvDone(evd)){evd.done=false;if(EV_COLL[evd.type])delete evd.pres}else{evd.done=true;if(EV_COLL[evd.type])evd.pres='si'}save();render()}}
-  else if(a==='swdone'){var dq=(state.collq||[]).filter(function(x){return x.id===el.dataset.swid})[0];if(dq){if(isCollDone(dq)){dq.done=false;dq.doneDate=''}else{dq.done=true;dq.doneDate=iso(new Date())}save();render()}}
+  else if(a==='swdone'&&el.dataset.swk==='event'){var evd=evById(el.dataset.swid);if(evd){var wasEv=isEvDone(evd);var goE=function(){if(wasEv){evd.done=false;if(EV_COLL[evd.type])delete evd.pres}else{evd.done=true;if(EV_COLL[evd.type])evd.pres='si'}save();render()};if(wasEv)goE();else swDoneAnim(el,false,goE)}}
+  else if(a==='swdone'){var dq=(state.collq||[]).filter(function(x){return x.id===el.dataset.swid})[0];if(dq){var wasC=isCollDone(dq);var goC=function(){if(wasC){dq.done=false;dq.doneDate=''}else{dq.done=true;dq.doneDate=iso(new Date())}save();render()};if(wasC)goC();else swDoneAnim(el,true,goC)}}
   else if(a==='swedit'){if(el.dataset.swk==='subj'){var sp=el.dataset.swid.split('::');openSubjPick(sp[0],sp.slice(1).join('::'))}else if(el.dataset.swk==='log')openLogEdit(el.dataset.swid);else if(el.dataset.swk==='coll')openColl(el.dataset.swid);else openSheet(el.dataset.swk,el.dataset.swid)}
-  else if(a==='swdel'){if(el.dataset.swk==='subj'){var sq=el.dataset.swid.split('::');subjDelete(sq[0],sq.slice(1).join('::'))}else swDelete(el.dataset.swk,el.dataset.swid)}
+  else if(a==='swdel'){var dk=el.dataset.swk,di=el.dataset.swid;swDoneAnim(el,true,function(){if(dk==='subj'){var sq=di.split('::');subjDelete(sq[0],sq.slice(1).join('::'))}else swDelete(dk,di)},'del')}
   else if(a==='rvall')toggleAllRv(el);
   else if(a==='rvok')confirmReview();
   else if(a==='deldoc'){var us=JSON.stringify(state);state.docs=state.docs.filter(function(d){return d.id!==el.dataset.id});save();render();showUndo(us)}
@@ -6562,6 +6575,17 @@ function onTouchEnd(e){
 })();
 
 /* ---------- scorrimento di una riga: Modifica / Elimina ---------- */
+function swDoneAnim(el,collapse,cb,kind){
+  var r=el.closest&&el.closest('.swr');
+  if(!r||(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)){cb();return}
+  if(r.dataset.swanim)return;r.dataset.swanim='1';
+  var h=r.offsetHeight;
+  r.style.transition='transform .2s cubic-bezier(.22,1,.36,1)';r.style.transform='';
+  r.classList.add('swok');if(kind==='del')r.classList.add('swok-del');
+  r.insertAdjacentHTML('beforeend','<span class="swok-ic" aria-hidden="true">'+ic(kind==='del'?'trash':'tick',kind==='del'?34:38)+'</span>');
+  if(collapse){setTimeout(function(){r.style.height=h+'px';void r.offsetHeight;r.classList.add('swok-out')},520)}
+  setTimeout(cb,collapse?840:640);
+}
 function swDelete(kind,id){
   var arr=coll(kind),i=arr.findIndex(function(x){return x.id===id});
   if(i<0)return;
