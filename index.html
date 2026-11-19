@@ -209,6 +209,9 @@ button.h1chev{border:0;outline:0;margin:0;cursor:pointer;-webkit-tap-highlight-c
 .swok-ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--green-bg);color:var(--green);border-radius:inherit;animation:swokbg .22s ease-out both;z-index:3}
 .swok-ic svg{stroke-width:2.6;animation:swokpop .5s cubic-bezier(.2,1.7,.4,1) .05s both}
 .swr.swok-del .swok-ic{background:var(--red-bg);color:var(--red)}
+.mkE{margin-left:6px}
+.mkA.mkE.on{background:var(--marker);color:var(--marker-ink)}
+.mkEs{display:block;margin-top:4px;max-width:100%;font:inherit;font-weight:600;font-size:13px;padding:4px 8px;border-radius:8px;border:0;background:var(--paper);color:var(--ink2)}
 .swr.swok-ns .swok-ic{background:var(--marker);color:var(--marker-ink)}
 .swb.ns{background:var(--marker);color:var(--marker-ink);text-align:center}
 .swr.swok-del .swok-ic svg{animation:swokshake .5s ease-out .05s both}
@@ -671,7 +674,7 @@ Se c’è un impegno futuro: titolo “Prossimo impegno” e una scheda bianca u
 - Toccando una lezione che non è in corso si apre un menù con solo **Scheda lezione** ed **Elenco della classe**. Toccando un impegno lo si modifica.
 - La lezione in corso (solo se si guarda oggi) sta al suo posto nell’ordine ed è una scheda **blu** (`#2340a8`) alta come le altre: striscia del colore della classe a sinistra, materia in grassetto e classe sotto, a destra un chip “In corso” con pallino verde e sotto l’orario, e un cerchio con una freccia giù. Toccando la scheda si apre lo stesso menù delle altre lezioni (Scheda lezione, Elenco della classe); la scheda si abbassa un poco al tocco.
 - La freccia apre il menù a tendina **Strumenti**: un pannello azzurro (`#e4eafb`) attaccato solo al bordo basso della scheda blu, con gli angoli bassi arrotondati, che contiene tre pulsanti bianchi quadrati con un’icona in un quadratino azzurro: **A chi tocca?**, **Squadre e gruppi**, **Controllo materiale**. Agiscono sulla classe della lezione in corso: A chi tocca? apre l’estrazione, Squadre e gruppi si apre già su quella classe, Controllo materiale apre una verifica di tipo materiale. All’apertura dell’app il pannello è chiuso. I tre pulsanti compaiono solo oggi e solo se c’è una lezione in corso; altrimenti non ci sono (gli strumenti restano in Altro).
-- Verifica materiale: ogni alunno ha un quadratino piccolo con la “a” (assente) prima di spunta e X. La “a” segna l’assenza per tutta la giornata, valida anche in Squadre e gruppi e in A chi tocca. Premere spunta o X su un assente lo fa tornare presente. “Tutti hanno il materiale” salta gli assenti.
+- Verifica materiale: ogni alunno ha un quadratino piccolo con la “a” (assente), un secondo con la “e” (esonerato) e poi spunta e X. La “e” si accende in giallo e sotto il nome compare un menu per il motivo (Infortunio, Certificato medico, Altro motivo); un esonerato non conta né come materiale portato né come mancante: resta fuori dai conteggi (per esempio 3/5), nell’elenco delle verifiche si legge “1 esonerato” e nel PDF del materiale compare “ES”. “Tutti hanno il materiale” salta gli esonerati e gli assenti. La “a” segna l’assenza per tutta la giornata, valida anche in Squadre e gruppi e in A chi tocca. Premere spunta o X su un assente lo fa tornare presente. “Tutti hanno il materiale” salta gli assenti.
 
 Se la giornata è vuota: “Giornata libera. Inserisci le tue lezioni nell’orario o aggiungi un impegno con il pulsante +.” e la pillola “Apri l’orario” (icona orologio).
 
@@ -1515,7 +1518,7 @@ function syncSubjSel(clsId,subjId){
   var tmp=document.createElement('div');tmp.innerHTML=h;si.replaceWith(tmp.firstChild);
 }
 document.addEventListener('input',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject')});
-document.addEventListener('change',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='lg-cls')syncSubjSel('lg-cls','lg-subj');else if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject');else if(t.id==='ys-y'&&sheet.kind==='year')openYear(+t.value);else if(t.id==='cl-done')collDoneTog();else if(t.id==='cl-ns')collNsTog();else if(t.id==='of-type')offTypeTog()});
+document.addEventListener('change',function(e){var t=e.target;if(!t||!sheet)return;if(t.id==='lg-cls')syncSubjSel('lg-cls','lg-subj');else if(t.id==='f-cls'&&sheet.kind==='lesson')syncSubjSel('f-cls','f-subject');else if(t.id==='ys-y'&&sheet.kind==='year')openYear(+t.value);else if(t.id==='cl-done')collDoneTog();else if(t.id==='cl-ns')collNsTog();else if(t.classList&&t.classList.contains('mkEs')){var rr=t.closest('.mrow');if(rr){rr.dataset.eso=t.value;saveMatDraft()}}else if(t.id==='of-type')offTypeTog()});
 function adoptSubj(cid,subj){var c=clsById(cid);if(!c||!subj||clsSubjList(c).indexOf(subj)<0)return;var u=ui();u.csubj=u.csubj||{};if(u.csubj[cid]!==subj){u.csubj[cid]=subj;save()}}
 function teamsEx(id){return !!(absToday()[id]||(sheet&&sheet.skip&&sheet.skip[id]))}
 function mdk(cid){var c=clsById(cid);return cid+'|'+(c?curSubj(c):'')}
@@ -1646,7 +1649,7 @@ function numOf(s){var l=studsOf(s.cls);for(var i=0;i<l.length;i++)if(l[i].id===s
 function numHTML(s){var n=numOf(s);return '<span class="sno" aria-label="Numero '+n+'">'+n+'</span>'}
 function studsOf(cid){return state.students.filter(function(s){return s.cls===cid}).sort(function(a,b){return a.name.localeCompare(b.name,'it')})}
 function gradesOf(sid){return state.grades.filter(function(g){return g.student===sid&&g.type!=='materiale'&&subjOk(g)})}
-function matsOf(sid){return state.grades.filter(function(g){return g.student===sid&&g.type==='materiale'&&subjOk(g)})}
+function matsOf(sid){return state.grades.filter(function(g){return g.student===sid&&g.type==='materiale'&&!g.eso&&subjOk(g)})}
 function avgOf(list){list=list.filter(function(g){return g.type!=='materiale'});if(!list.length)return null;var t=0;list.forEach(function(g){t+=g.value});return t/list.length}
 function parseGrade(s){
   s=String(s||'').trim().replace(/\s+/g,'');
@@ -2887,7 +2890,7 @@ function vClasse(){
   h+='<p class="m" style="margin-top:10px">Nomi, voti e annotazioni restano sul tuo dispositivo e, se hai fatto l’accesso, nel tuo account. Per proteggere gli alunni puoi usare cognome e iniziale oppure il numero di registro.</p>';
   h+='<div class="noteb" style="margin-top:12px"><button class="opill pri" data-act="newtest">'+ic('plus',18)+'Nuova verifica</button><button class="opill" data-act="edit" data-kind="class" data-id="'+c.id+'">'+ic('edit',18)+'Modifica classe</button><button class="opill" data-act="pdfregistro"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Esporta in PDF</button>'+toccaCard(c,ss)+'</div>';
   var groups={};
-  gs.forEach(function(g){var k=testKey(g);(groups[k]=groups[k]||{key:k,date:g.date,type:g.type,desc:g.desc||'',v:[]}).v.push(g.value)});
+  gs.forEach(function(g){var k=testKey(g);var gp=(groups[k]=groups[k]||{key:k,date:g.date,type:g.type,desc:g.desc||'',v:[],e:0});if(g.eso)gp.e++;else gp.v.push(g.value)});
   var tl=Object.keys(groups).map(function(k){return groups[k]}).sort(function(x,y){return y.date.localeCompare(x.date)});
   if(tl.length){
     var topen=!!testOpen[c.id];
@@ -2896,7 +2899,7 @@ function vClasse(){
       var isM=t.type==='materiale';
       var av=isM?0:t.v.reduce(function(s,x){return s+x},0)/t.v.length;
       var okN=isM?t.v.filter(function(x){return x>0}).length:0;
-      return '<button class="rowbtn mid" data-act="edittest" data-key="'+esc(t.key)+'"><span class="grow"><span class="t">'+esc(t.desc||TIPI_TEST[t.type])+'</span><span class="m">'+shortDate(t.date)+', '+(isM?okN+' su '+t.v.length+' con il materiale':t.v.length+(t.v.length===1?' voto':' voti'))+'</span></span>'+(isM?'<span class="chip">'+okN+'/'+t.v.length+'</span>':'<span class="chip'+(av<6?' red':'')+'">Media '+fmtG(av)+'</span>')+'<span class="chev">'+ic('edit',18)+'</span></button>';
+      return '<button class="rowbtn mid" data-act="edittest" data-key="'+esc(t.key)+'"><span class="grow"><span class="t">'+esc(t.desc||TIPI_TEST[t.type])+'</span><span class="m">'+shortDate(t.date)+', '+(isM?okN+' su '+t.v.length+' con il materiale'+(t.e?' \u00b7 '+t.e+(t.e===1?' esonerato':' esonerati'):''):t.v.length+(t.v.length===1?' voto':' voti'))+'</span></span>'+(isM?'<span class="chip">'+okN+'/'+t.v.length+'</span>':'<span class="chip'+(av<6?' red':'')+'">Media '+fmtG(av)+'</span>')+'<span class="chev">'+ic('edit',18)+'</span></button>';
     }).join('')+'</div>';
   }
   var tdy0=iso(new Date()),cd=ui().clsDay||tdy0,isFut=cd>tdy0,cdp=parse(cd),L6=lastLessons(c,ss);
@@ -4101,14 +4104,18 @@ function mkBtn(sid,v,on){
   var svg=yes?'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>':'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   return '<button type="button" class="mk '+(yes?'yes':'no')+(on?' on':'')+'" data-act="matset" data-sid="'+sid+'" data-v="'+v+'" aria-pressed="'+(on?'true':'false')+'" aria-label="'+(yes?'Ha il materiale':'Non ha il materiale')+'">'+svg+'</button>';
 }
+var ESO_MOT={infortunio:'Infortunio',certificato:'Certificato medico',altro:'Altro motivo'};
+function esoSel(sid,cur){return '<select class="mkEs" data-sid="'+sid+'" aria-label="Motivo dell\u2019esonero">'+Object.keys(ESO_MOT).map(function(k){return '<option value="'+k+'"'+(k===cur?' selected':'')+'>'+ESO_MOT[k]+'</option>'}).join('')+'</select>'}
 function testRowsHTML(ss,type,gv,mv){
   if(type==='materiale'){
     var ua=!!(sheet&&sheet.kind==='test'&&sheet.useAbs);
-    var hint=ua?"Tocca il segno di spunta se ha il materiale, la X se non ce l'ha, \u00aba\u00bb se era assente: risulter\u00e0 assente quel giorno (se \u00e8 oggi, anche in A chi tocca e in Squadre e gruppi).":"Tocca il segno di spunta se ha il materiale, la X se non ce l'ha. Lascia vuoto chi non era presente.";
+    var CK='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Spunta" style="vertical-align:-3px"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+    var hint=ua?CK+" se ha il materiale, X se non ce l'ha, \u00aba\u00bb se era assente (vale anche in A chi tocca e Squadre e gruppi), \u00abe\u00bb se \u00e8 esonerato.":CK+" se ha il materiale, X se non ce l'ha, \u00abe\u00bb se \u00e8 esonerato. Lascia vuoto chi non era presente.";
     return '<p class="m" style="margin:6px 0">'+hint+'</p><div class="sbtns" style="margin:8px 0"><button type="button" class="btn ghost small" id="matallbtn" aria-pressed="false" data-act="matall">Tutti hanno il materiale</button></div><p class="err" id="e-test" hidden></p>'+
       ss.map(function(s){
         var m=mv[s.id]||'',av=ua&&sheet.av?sheet.av[s.id]:undefined,a=ua&&(av!==undefined?av==='1':(!!absToday()[s.id]&&m===''));
-        return '<div class="rv mrow'+(a?' abs':'')+'" data-msid="'+s.id+'" data-m="'+m+'" data-abs="'+(a?'1':'')+'" style="align-items:center">'+numHTML(s)+'<span class="grow t">'+esc(s.name)+'</span>'+(ua?'<button type="button" class="mkA'+(a?' on':'')+'" data-act="matabs" aria-pressed="'+(a?'true':'false')+'" aria-label="Assente">a</button>':'')+mkBtn(s.id,'1',m==='1')+mkBtn(s.id,'0',m==='0')+'</div>'}).join('');
+        var isE=m==='e',es=(sheet&&sheet.ev&&sheet.ev[s.id])||'infortunio';
+        return '<div class="rv mrow'+(a?' abs':'')+(isE?' eso':'')+'" data-msid="'+s.id+'" data-m="'+m+'" data-abs="'+(a?'1':'')+'" data-eso="'+(isE?es:'')+'" style="align-items:center">'+numHTML(s)+'<span class="grow t">'+esc(s.name)+(isE?esoSel(s.id,es):'')+'</span>'+(ua?'<button type="button" class="mkA'+(a?' on':'')+'" data-act="matabs" aria-pressed="'+(a?'true':'false')+'" aria-label="Assente">a</button>':'')+'<button type="button" class="mkA mkE'+(isE?' on':'')+'" data-act="mateso" aria-pressed="'+(isE?'true':'false')+'" aria-label="Esonerato">e</button>'+mkBtn(s.id,'1',m==='1')+mkBtn(s.id,'0',m==='0')+'</div>'}).join('');
   }
   return '<p class="m" style="margin:6px 0">Scrivi i voti, per esempio 7 o 7,5. Per i segni usa i decimali: ,25 vale + (6,25 = 6+) e ,75 vale − (6,75 = 7−). Lascia vuoto chi era assente.</p><p class="err" id="e-test" hidden></p>'+
     ss.map(function(s){return '<div class="rv" style="align-items:center">'+numHTML(s)+'<span class="grow t">'+esc(s.name)+'</span><input class="gv" type="text" inputmode="decimal" autocomplete="off" data-sid="'+s.id+'" value="'+esc(gv[s.id]||'')+'" aria-label="Voto di '+esc(s.name)+'"></div>'}).join('');
@@ -4116,19 +4123,19 @@ function testRowsHTML(ss,type,gv,mv){
 function saveMatDraft(){
   if(!sheet||sheet.kind!=='test'||sheet.key)return;
   var t=document.getElementById('f-type');if(!t||t.value!=='materiale')return;
-  var m={},a={},any=false;
-  document.querySelectorAll('.mrow').forEach(function(r){var id=r.dataset.msid;if(r.dataset.m!==''){m[id]=r.dataset.m;any=true}a[id]=r.dataset.abs});
+  var m={},a={},x={},any=false;
+  document.querySelectorAll('.mrow').forEach(function(r){var id=r.dataset.msid;if(r.dataset.m!==''){m[id]=r.dataset.m;any=true}if(r.dataset.m==='e')x[id]=r.dataset.eso||'infortunio';a[id]=r.dataset.abs});
   var d=state.matDraft=state.matDraft||{};
   if(!any){if(d[mdk(sheet.cls)]){delete d[mdk(sheet.cls)];save()}return}
   var de=document.getElementById('f-desc');
-  d[mdk(sheet.cls)]={date:iso(new Date()),m:m,a:a,desc:de?de.value:''};
+  d[mdk(sheet.cls)]={date:iso(new Date()),m:m,a:a,x:x,desc:de?de.value:''};
   save();
 }
 function syncMatAll(){
   var btn=document.getElementById('matallbtn');if(!btn)return;
   var rows=[].slice.call(document.querySelectorAll('.mrow'));
-  rows.forEach(function(r){var ab=r.dataset.abs==='1';r.classList.toggle('abs',ab);var l=r.querySelector('.mkA');if(l){l.classList.toggle('on',ab);l.setAttribute('aria-pressed',ab?'true':'false')}});
-  rows=rows.filter(function(r){return r.dataset.abs!=='1'});
+  rows.forEach(function(r){var ab=r.dataset.abs==='1',ie=r.dataset.m==='e';r.classList.toggle('abs',ab);r.classList.toggle('eso',ie);var l=r.querySelector('.mkA[data-act="matabs"]');if(l){l.classList.toggle('on',ab);l.setAttribute('aria-pressed',ab?'true':'false')}var le=r.querySelector('.mkE');if(le){le.classList.toggle('on',ie);le.setAttribute('aria-pressed',ie?'true':'false')}var sl=r.querySelector('.mkEs'),nm=r.querySelector('.grow.t');if(ie&&!sl&&nm)nm.insertAdjacentHTML('beforeend',esoSel(r.dataset.msid,r.dataset.eso||'infortunio'));else if(!ie&&sl){sl.remove();r.dataset.eso=''}});
+  rows=rows.filter(function(r){return r.dataset.abs!=='1'&&r.dataset.m!=='e'});
   var all=rows.length>0&&rows.every(function(r){return r.dataset.m==='1'});
   btn.className='btn small'+(all?'':' ghost');
   btn.setAttribute('aria-pressed',all?'true':'false');
@@ -4137,7 +4144,7 @@ function syncMatAll(){
 }
 function captureTest(){
   document.querySelectorAll('.gv').forEach(function(i){sheet.gv[i.dataset.sid]=i.value});
-  document.querySelectorAll('.mrow').forEach(function(r){sheet.mv[r.dataset.msid]=r.dataset.m;if(sheet.useAbs)sheet.av[r.dataset.msid]=r.dataset.abs});
+  document.querySelectorAll('.mrow').forEach(function(r){sheet.mv[r.dataset.msid]=r.dataset.m;if(r.dataset.m==='e'){sheet.ev=sheet.ev||{};sheet.ev[r.dataset.msid]=r.dataset.eso||'infortunio'}if(sheet.useAbs)sheet.av[r.dataset.msid]=r.dataset.abs});
 }
 function matTodayKey(cid,date){if(date!==iso(new Date()))return null;var g=state.grades.filter(function(x){return x.cls===cid&&x.type==='materiale'&&x.date===date&&subjOk(x)})[0];return g?testKey(g):null}
 function switchTestType(){
@@ -4145,7 +4152,7 @@ function switchTestType(){
   captureTest();
   var type=document.getElementById('f-type').value;
   if(type==='materiale'&&!sheet.key){var dk=matTodayKey(sheet.cls,document.getElementById('f-date').value);if(dk){openTest(sheet.cls,dk);return}}
-  if(type==='materiale'&&!sheet.key){var dr=(state.matDraft||{})[mdk(sheet.cls)];if(dr&&dr.date===iso(new Date())&&!Object.keys(sheet.mv).some(function(k){return sheet.mv[k]!==''})){Object.keys(dr.m||{}).forEach(function(k){sheet.mv[k]=dr.m[k]});sheet.av=JSON.parse(JSON.stringify(dr.a||{}));var dd=document.getElementById('f-desc');if(dd&&!dd.value&&dr.desc)dd.value=dr.desc}}
+  if(type==='materiale'&&!sheet.key){var dr=(state.matDraft||{})[mdk(sheet.cls)];if(dr&&dr.date===iso(new Date())&&!Object.keys(sheet.mv).some(function(k){return sheet.mv[k]!==''})){Object.keys(dr.m||{}).forEach(function(k){sheet.mv[k]=dr.m[k]});sheet.ev=JSON.parse(JSON.stringify(dr.x||{}));sheet.av=JSON.parse(JSON.stringify(dr.a||{}));var dd=document.getElementById('f-desc');if(dd&&!dd.value&&dr.desc)dd.value=dr.desc}}
   document.getElementById('test-rows').innerHTML=testRowsHTML(studsOf(sheet.cls),type,sheet.gv,sheet.mv);
   syncMatAll();
   var sb=document.getElementById('savetestbtn');if(sb)sb.textContent=type==='materiale'?'Salva':'Salva i voti';
@@ -4156,10 +4163,10 @@ function openTest(cid,key){
   var ex=key?state.grades.filter(function(g){return g.cls===cid&&testKey(g)===key&&subjOk(g)}):[];
   var first=ex[0]||null;
   var vals=first?{date:first.date,type:first.type,desc:first.desc||''}:{date:iso(new Date()),type:'scritto',desc:''};
-  var gv={},mv={};
-  ex.forEach(function(g){if(g.type==='materiale')mv[g.student]=g.value>0?'1':'0';else gv[g.student]=fmtVoto(g.value)});
-  sheet={kind:'test',cls:cid,key:first?key:null,armed:false,gv:gv,mv:mv,av:{},useAbs:vals.date<=iso(new Date())};
-  if(!first){var dr=(state.matDraft||{})[mdk(cid)];if(dr&&dr.date===iso(new Date())){vals.type='materiale';vals.desc=dr.desc||'';Object.keys(dr.m||{}).forEach(function(k){mv[k]=dr.m[k]});sheet.av=JSON.parse(JSON.stringify(dr.a||{}))}else if(dr){delete state.matDraft[mdk(cid)]}}
+  var gv={},mv={},ev={};
+  ex.forEach(function(g){if(g.type==='materiale'){mv[g.student]=g.eso?'e':(g.value>0?'1':'0');if(g.eso)ev[g.student]=g.eso}else gv[g.student]=fmtVoto(g.value)});
+  sheet={kind:'test',cls:cid,key:first?key:null,armed:false,gv:gv,mv:mv,ev:ev,av:{},useAbs:vals.date<=iso(new Date())};
+  if(!first){var dr=(state.matDraft||{})[mdk(cid)];if(dr&&dr.date===iso(new Date())){vals.type='materiale';vals.desc=dr.desc||'';Object.keys(dr.m||{}).forEach(function(k){mv[k]=dr.m[k]});Object.keys(dr.x||{}).forEach(function(k){ev[k]=dr.x[k]});sheet.av=JSON.parse(JSON.stringify(dr.a||{}))}else if(dr){delete state.matDraft[mdk(cid)]}}
   var ttl=first?'Modifica verifica':'Nuova verifica';
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="'+ttl+'"><h2>'+ttl+'</h2><div class="form">'+
     fieldHTML({k:'date',l:'Data',t:'date',half:1},vals.date)+
@@ -4182,7 +4189,7 @@ function saveTest(){
   if(isMat&&state.grades.some(function(g){return g.cls===sheet.cls&&g.type==='materiale'&&g.date===date&&subjOk(g)&&(!sheet.key||testKey(g)!==sheet.key)})){var dm=parse(date);er.textContent='Per questa classe c’è già una verifica sul materiale del '+dm.getDate()+' '+MESI3[dm.getMonth()]+' '+dm.getFullYear()+'. Aprila dall’elenco delle verifiche per modificarla: nello stesso giorno ne basta una.';er.hidden=false;return}
   var inputs=document.querySelectorAll('.gv'),vals=[],bad=false;
   if(isMat){
-    document.querySelectorAll('.mrow').forEach(function(r){vals.push({sid:r.dataset.msid,v:r.dataset.m===''?null:Number(r.dataset.m),abs:r.dataset.abs==='1'})});
+    document.querySelectorAll('.mrow').forEach(function(r){var ie=r.dataset.m==='e';vals.push({sid:r.dataset.msid,v:r.dataset.m===''?null:(ie?0:Number(r.dataset.m)),abs:r.dataset.abs==='1',eso:ie?(r.dataset.eso||'infortunio'):''})});
   }else for(var i=0;i<inputs.length;i++){
     var raw=inputs[i].value.trim();
     inputs[i].setAttribute('aria-invalid','false');
@@ -4199,8 +4206,8 @@ function saveTest(){
   vals.forEach(function(x){
     var g=byS[x.sid];
     if(x.v===null){if(g)drop[g.id]=1;return}
-    if(g){g.value=x.v;g.date=date;g.type=type;g.desc=desc}
-    else add.push({id:uid(),student:x.sid,cls:sheet.cls,subj:(function(){var cc=clsById(sheet.cls);return cc?curSubj(cc):''})(),date:date,type:type,desc:desc,value:x.v});
+    if(g){g.value=x.v;g.date=date;g.type=type;g.desc=desc;if(x.eso)g.eso=x.eso;else delete g.eso}
+    else{var ng={id:uid(),student:x.sid,cls:sheet.cls,subj:(function(){var cc=clsById(sheet.cls);return cc?curSubj(cc):''})(),date:date,type:type,desc:desc,value:x.v};if(x.eso)ng.eso=x.eso;add.push(ng)}
   });
   state.grades=state.grades.filter(function(g){return !drop[g.id]}).concat(add);
   if(isMat&&state.matDraft)delete state.matDraft[mdk(sheet.cls)];
@@ -5230,11 +5237,11 @@ async function exportClassPdf(cid,what){
       var head=['N.','Alunno'].concat(shown.map(function(t){var d=parse(t.date);return pad(d.getDate())+'/'+pad(d.getMonth()+1)})).concat(['Totale']);
       var widths=[10,52].concat(shown.map(function(){return 14})).concat([180-10-52-14*shown.length]);
       var rows2=ss.map(function(st,i){
-        var ms=matsOf(st.id);var okN=ms.filter(function(x){return x.value>0}).length;
-        var cells=shown.map(function(t){var g=ms.filter(function(x){return testKey(x)===t.key})[0];return g?(g.value>0?'si':'NO'):'-'});
+        var ms=matsOf(st.id);var okN=ms.filter(function(x){return x.value>0}).length;var allm=state.grades.filter(function(g){return g.student===st.id&&g.type==='materiale'&&subjOk(g)});
+        var cells=shown.map(function(t){var g=allm.filter(function(x){return testKey(x)===t.key})[0];return g?(g.eso?'ES':(g.value>0?'si':'NO')):'-'});
         return [i+1,st.name].concat(cells).concat([ms.length?okN+'/'+ms.length:'']);
       });
-      var note='si = ha il materiale, NO = non ce l\'ha, - = assente o non segnato.'+(tl.length>shown.length?' Sono mostrate le ultime '+shown.length+' verifiche su '+tl.length+'; il totale le comprende tutte.':'');
+      var note='si = ha il materiale, NO = non ce l\'ha, ES = esonerato, - = assente o non segnato.'+(tl.length>shown.length?' Sono mostrate le ultime '+shown.length+' verifiche su '+tl.length+'; il totale le comprende tutte.':'');
       await buildPdf({title:'Materiale '+ttl,sub:sub+' \u00b7 aggiornato al '+shortDate(iso(new Date())),table:{head:head,widths:widths,rows:rows2},note:note,file:'materiale-'+fslug+'.pdf'});
     }else{
       var logs=state.logs.filter(function(g){return g.school===c.school&&g.cls===c.name&&(!clsSubjMulti(c)||(g.subject||clsSubjList(c)[0])===curSubj(c))}).sort(function(a,b){return a.date.localeCompare(b.date)});
@@ -6368,13 +6375,14 @@ async function onAgendaClick(e){
     save();render();
   }
   else if(a==='matall'){
-    var rowsAll=[].slice.call(document.querySelectorAll('.mrow')).filter(function(r){return r.dataset.abs!=='1'});var wasAll=rowsAll.length>0&&rowsAll.every(function(r){return r.dataset.m==='1'});rowsAll.forEach(function(r){r.dataset.m=wasAll?'':'1';r.querySelectorAll('.mk').forEach(function(bt){var on=bt.dataset.v===r.dataset.m;bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on?'true':'false')})});syncMatAll();
+    var rowsAll=[].slice.call(document.querySelectorAll('.mrow')).filter(function(r){return r.dataset.abs!=='1'&&r.dataset.m!=='e'});var wasAll=rowsAll.length>0&&rowsAll.every(function(r){return r.dataset.m==='1'});rowsAll.forEach(function(r){r.dataset.m=wasAll?'':'1';r.querySelectorAll('.mk').forEach(function(bt){var on=bt.dataset.v===r.dataset.m;bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on?'true':'false')})});syncMatAll();
   }
   else if(a==='matset'){
     var mrow=el.closest('.mrow');
     if(mrow){var mv0=el.dataset.v;mrow.dataset.m=mrow.dataset.m===mv0?'':mv0;
       if(mrow.dataset.m!=='')mrow.dataset.abs='';mrow.querySelectorAll('.mk').forEach(function(bt){var on=bt.dataset.v===mrow.dataset.m;bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on?'true':'false')});syncMatAll()}
   }
+  else if(a==='mateso'){var er2=el.closest('.mrow');if(er2){if(er2.dataset.m==='e'){er2.dataset.m='';er2.dataset.eso=''}else{er2.dataset.m='e';er2.dataset.abs='';er2.dataset.eso=er2.dataset.eso||'infortunio'}er2.querySelectorAll('.mk').forEach(function(bt){bt.classList.remove('on');bt.setAttribute('aria-pressed','false')});syncMatAll()}}
   else if(a==='matabs'){var ar=el.closest('.mrow');if(ar){if(ar.dataset.abs==='1')ar.dataset.abs='';else{ar.dataset.abs='1';ar.dataset.m=''}ar.querySelectorAll('.mk').forEach(function(bt){var on=bt.dataset.v===ar.dataset.m;bt.classList.toggle('on',on);bt.setAttribute('aria-pressed',on?'true':'false')});syncMatAll()}}
   else if(a==='testtoggle'){var ttid=el.dataset.id;testOpen[ttid]=!testOpen[ttid];render()}
   else if(a==='coltoggle'){var tt=el.dataset.t;colOpen[tt]=!colOpen[tt];render()}
