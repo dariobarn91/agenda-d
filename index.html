@@ -860,6 +860,10 @@ All’uscita i dati restano sull’account. Un altro account, anche sullo stesso
 - Non salvare il PIN in chiaro e non mandarlo sull’account.
 - Non lasciare che la schermata di blocco compaia nel tema sbagliato: il tema scelto si applica prima.
 
+## 14. Guida iniziale
+
+Al primo avvio, con l’agenda ancora vuota e dopo la schermata di accesso, parte una guida in 14 passi: benvenuto, Oggi, Calendario, La tua scuola (nome, altre scuole, «Tutte le scuole»), Anno scolastico (inizio e fine lezioni, due quadrimestri o tre trimestri), Cerca (la lente), Orario, Classi, Altro, Archivio documenti (nella scheda Impegni si aggiunge il file degli impegni: l’app lo legge e dopo l’ok lo aggiunge al calendario), Ore collegiali (le 40 + 40 ore, con Presente o Assente per ogni impegno), il pulsante +, Promemoria e backup, chiusura. Ogni passo evidenzia il pulsante della barra in basso e mostra una scheda con titolo e testo. In ogni passo si può tornare indietro o saltare con «Salta la guida» (o con Esc). Alla chiusura o al salto non riparte più da sola: il segno è salvato in `localStorage` con la chiave `ad-guide`. Si rivede da Altro › Impostazioni › «Guida all’uso». È un blocco a sé (`guida-css` e `guida-js`, fondo del file): non tocca dati, notifiche, sincronizzazione né `sw.js`.
+
 ## Come è fatto questo file
 
 Un solo file HTML. Aprilo nel browser: è l’app. I dati restano su questo dispositivo.
@@ -2128,7 +2132,8 @@ function vSettings(){
   h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="applock"><span class="hi">'+ic('lock',24)+'</span><span class="grow"><span class="t">Blocco app</span><span class="m">'+esc(window.AgendaLock?window.AgendaLock.label():'Non attivo')+'</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   if(bkMsg){h+='<p class="m" role="status" style="margin-top:10px">'+esc(bkMsg)+'</p>';bkMsg=''}
   h+='<div style="margin-top:12px">';
-  h+='<div class="calcards" style="margin-top:0"><button class="rowbtn mid" data-act="nav" data-v="privacy"><span class="hi">'+ic('shield',24)+'</span><span class="grow"><span class="t">Privacy</span><span class="m">Informativa ed elimina dati</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
+  h+='<div class="calcards" style="margin-top:0"><button class="rowbtn mid" data-act="guide"><span class="hi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.8-1.1 1.6"/><path d="M12 16.6v.1"/></svg></span><span class="grow"><span class="t">Guida all\'uso</span><span class="m">Rivedi il percorso di benvenuto</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
+  h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="nav" data-v="privacy"><span class="hi">'+ic('shield',24)+'</span><span class="grow"><span class="t">Privacy</span><span class="m">Informativa ed elimina dati</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   h+='</div>';
   return h;
 }
@@ -6342,6 +6347,7 @@ async function onAgendaClick(e){
   var el=e.target.closest('[data-act]');if(!el)return;
   var a=el.dataset.act;
   if(a==='nav'){if(el.classList.contains('navb')&&Date.now()-(window.__navPick||0)<1500)return;if(el.dataset.v!==cur&&cur!=='stud')ui().collDay=null;if(el.dataset.v!=='coll')studFrom='';if(el.dataset.v===cur){var apx=document.getElementById('app'),sty=Math.max(apx?apx.scrollTop:0,window.pageYOffset||0);if(sty>40){if(apx&&apx.scrollTop>0)apx.scrollTo({top:0,behavior:'smooth'});if((window.pageYOffset||0)>0)window.scrollTo({top:0,behavior:'smooth'});return}}if(el.classList.contains('navb'))tabGo(el.dataset.v);else cur=el.dataset.v;render();resetScroll();return}
+  else if(a==='guide'){if(window.AgendaGuida)window.AgendaGuida.start();return}
   else if(a==='wkmove'){var wsc=document.getElementById('weekscroller');if(!wsc)return;wsc.dispatchEvent(new Event('wheel'));var wi=(wsc._ti!=null&&Date.now()<wsc._te)?wsc._ti:Math.round(wsc.scrollLeft/wsc.clientWidth);wi=Math.max(0,Math.min(wsc.children.length-1,wi+Number(el.dataset.d)));wsc._ti=wi;wsc._te=Date.now()+800;wsc.scrollTo({left:wi*wsc.clientWidth,behavior:'smooth'});return}
   else if(a==='wktoday'){var wsc=document.getElementById('weekscroller'),wt=iso(new Date()),wb=wsc&&wsc.querySelector('button.oggi');if(!wb){ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render();return}var wdl=wb.parentNode.getBoundingClientRect().left-wsc.getBoundingClientRect().left;if(Math.abs(wdl)<2){ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render();return}var wtm,wfin=function(){clearTimeout(wtm);wtm=setTimeout(function(){wsc.removeEventListener('scroll',wfin);ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render()},160)};wsc.addEventListener('scroll',wfin);wsc.scrollBy({left:wdl,behavior:'smooth'});wfin();return}
   else if(a==='gotoday'){ui().oggi=el.dataset.date;render();return}
@@ -6694,7 +6700,7 @@ function onTouchEnd(e){
     if(b&&b.dataset.v!==lastTab&&(lastTab=b.dataset.v)&&b.dataset.v!==cur){
       tabGo(b.dataset.v);
       swallowClickUntil=Date.now()+600;
-      render();
+      render();resetScroll();
     }
   }
   nav.addEventListener('pointerdown', function(e){
@@ -7055,11 +7061,151 @@ if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
     box.id='ioshint';box.setAttribute('role','note');
     box.innerHTML='<p><strong>Usala come app.</strong> Tocca <b>Condividi</b> (il quadrato con la freccia) e poi <b>Aggiungi alla schermata Home</b>.</p><button type="button">Chiudi</button>';
     box.querySelector('button').addEventListener('click',function(){try{localStorage.setItem('agenda_ios_hint','1')}catch(e){}box.remove()});
-    document.body.appendChild(box);
+    var tryShow=function(){var g=window.AgendaGuida;if(g&&g.active&&g.active()){setTimeout(tryShow,700);return}document.body.appendChild(box)};
+    setTimeout(tryShow,300);
   }catch(e){}
 })();
 
 
+</script>
+<style id="guida-css">
+#gd{position:fixed;inset:0;z-index:2000;touch-action:pan-y;overscroll-behavior:contain;font-family:var(--font-ui,system-ui,sans-serif)}
+#gd .gd-ring{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(10,16,40,.66);pointer-events:none;transition:left .25s,top .25s,width .25s,height .25s}
+#gd .gd-ring.on{outline:3px solid var(--marker,#ffe580)}
+#gd .gd-card{position:fixed;left:12px;right:12px;margin:0 auto;max-width:440px;background:var(--card);color:var(--ink);border-radius:20px;padding:16px 18px calc(14px + env(safe-area-inset-bottom,0px)*0);box-shadow:0 10px 40px rgba(0,0,0,.35);overflow:auto}
+#gd .gd-card.mid{top:50%;bottom:auto;transform:translateY(-50%)}
+#gd .gd-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:32px}
+#gd .gd-n{font-size:13px;font-weight:700;color:var(--ink2)}
+#gd .gd-skip{border:0;background:none;color:var(--ink2);font:700 14px var(--font-ui,system-ui,sans-serif);padding:8px 4px;cursor:pointer;text-decoration:underline}
+#gd h2{font:900 22px/1.25 var(--font-head,system-ui,sans-serif);margin:6px 0 6px}
+#gd p{margin:0 0 12px;color:var(--ink2);font-size:16px;line-height:1.45}
+#gd .gd-dots{display:flex;gap:6px;justify-content:center;margin:2px 0 14px}
+#gd .gd-dots i{width:7px;height:7px;border-radius:50%;background:var(--line);display:block}
+#gd .gd-dots i.on{background:var(--blue);width:20px;border-radius:4px}
+#gd .gd-row{display:flex;gap:10px}
+#gd .gd-row button{flex:1;min-height:48px;border-radius:14px;border:0;font:700 17px var(--font-ui,system-ui,sans-serif);cursor:pointer;touch-action:manipulation}
+#gd .gd-bk{background:var(--blue-bg);color:var(--blue)}
+#gd .gd-go{background:var(--blue);color:var(--on-blue)}
+#gd .gd-card.tight{padding-top:10px;padding-bottom:10px}
+#gd .gd-card.tight h2{font-size:19px;margin:2px 0 4px}
+#gd .gd-card.tight p{font-size:15px;line-height:1.35;margin-bottom:8px}
+#gd .gd-card.tight .gd-dots{display:none}
+#gd .gd-card.tight .gd-row button{min-height:44px}
+#gd button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){#gd .gd-ring{transition:none}}
+</style>
+<script id="guida-js">
+(function(){
+var LS='ad-guide',DATA='agenda-docente.v3',i=0,root=null,startTab='',lastFocus=null,watching=true;
+var STEPS=[
+ {t:'Benvenuto in Agenda docente',b:'Orario, impegni, classi e voti in un’unica app. Ti mostro in un minuto dove trovare ogni cosa. Puoi saltare la guida quando vuoi: la ritrovi in Altro › Impostazioni.',go:'Iniziamo'},
+ {tab:'oggi',sel:'.navb[data-v="oggi"]',t:'Oggi',b:'La giornata di oggi: lezioni, impegni e scadenze in una sola schermata. Scorri la settimana in alto per cambiare giorno.'},
+ {tab:'cal',sel:'.navb[data-v="cal"]',t:'Calendario',b:'Gli impegni e le lezioni svolte, giorno per giorno. Da qui puoi anche esportare il mese in PDF.'},
+ {tab:'cal',sel:'.schoolb',t:'La tua scuola',b:'In alto vedi la scuola attiva. Toccala per darle il nome giusto (Modifica), aggiungerne altre o scegliere «Tutte le scuole»: così vedi insieme gli impegni di ognuna.'},
+ {tab:'cal',sel:'[data-act="yearopen"]',t:'Anno scolastico',b:'Questo pulsante apre l’anno scolastico. Scegli l’anno, indica quando iniziano e finiscono le lezioni (fuori da quelle date presenze e assenze non si contano) e dividi l’anno in due quadrimestri o tre trimestri, con le date di ogni periodo.'},
+ {tab:'cal',sel:'[data-act="search"]',t:'Cerca',b:'La lente di ingrandimento cerca in tutta l’agenda: alunni, impegni, attività, annotazioni, contatti, classi e lezioni, e anche le funzioni dell’app, come Annotazioni o Archivio documenti. Scrivi almeno due lettere.'},
+ {tab:'ord',sel:'.navb[data-v="ord"]',t:'Orario',b:'Le tue ore di lezione della settimana. Puoi inserirle a mano oppure importarle da una foto.'},
+ {tab:'classi',sel:'.navb[data-v="classi"]',t:'Classi',b:'Le tue classi con alunni, voti e verifiche. Tocca una classe per vedere gli alunni e le medie.'},
+ {tab:'altro',sel:'.navb[data-v="altro"]',t:'Altro',b:'Qui trovi il resto: attività, assenze e permessi, ore collegiali, colloqui, supplenze, annotazioni, documenti, contatti e strumenti pratici come timer e squadre.'},
+ {tab:'altro',sel:'[data-act="nav"][data-v="doc"]',scroll:1,t:'Archivio documenti',b:'Nella scheda Impegni puoi aggiungere il file con gli impegni dell’anno (PDF, Word, testo o CSV): l’app lo legge e, dopo il tuo ok, li aggiunge al calendario. Il file non viene salvato.'},
+ {tab:'altro',sel:'[data-act="nav"][data-v="orecoll"]',scroll:1,t:'Ore collegiali',b:'Conta le 40 ore dei collegi docenti e le 40 dei consigli di classe. Gli impegni letti dal file compaiono qui da soli: segna Presente o Assente per ognuno e le ore si contano solo dove eri presente. Tocca una riga per cambiare data e orario o per eliminarla.'},
+ {tab:'oggi',sel:'#fab',t:'Aggiungere una cosa nuova',b:'Il pulsante + crea qualcosa di nuovo e cambia in base alla schermata: un impegno, un voto, una classe, un’attività…'},
+ {tab:'altro',t:'Promemoria e backup',b:'In Altro › Impostazioni attivi i promemoria per impegni e attività, scegli il tema chiaro o scuro, blocchi l’app con un PIN e salvi un backup dei dati. Con un account ritrovi tutto su ogni dispositivo.'},
+ {tab:'oggi',t:'Tutto pronto',b:'Puoi cominciare da Oggi o dal Calendario. Se ti serve, rivedi la guida da Altro › Impostazioni › Guida all’uso.',go:'Inizia'}
+];
+function q(s){return root&&root.querySelector(s)}
+function goTab(v){try{var b=document.querySelector('.navb[data-v="'+v+'"]');if(b)b.click()}catch(e){}}
+function mark(){try{localStorage.setItem(LS,'1')}catch(e){}}
+function place(){
+ if(!root)return;
+ var s=STEPS[i],card=q('.gd-card'),ring=q('.gd-ring'),el=s.sel?document.querySelector(s.sel):null;
+ if(el&&s.scroll){try{el.scrollIntoView({block:'start'});var ap=document.getElementById('app');if(ap)ap.scrollTop=Math.max(0,ap.scrollTop-90)}catch(e){}}
+ var r=el?el.getBoundingClientRect():null,H=window.innerHeight;
+ if(r&&r.width>0&&r.height>0){
+  ring.className='gd-ring on';
+  ring.style.left=(r.left-6)+'px';ring.style.top=(r.top-6)+'px';ring.style.width=(r.width+12)+'px';ring.style.height=(r.height+12)+'px';
+  card.className='gd-card';card.style.transform='';
+  if(r.top>H/2){card.style.top='auto';card.style.bottom=(H-r.top+18)+'px';card.style.maxHeight=Math.max(160,r.top-30)+'px'}
+  else{card.style.bottom='auto';card.style.top=(r.bottom+18)+'px';card.style.maxHeight=Math.max(160,H-r.bottom-30)+'px'}
+ }else{
+  ring.className='gd-ring';
+  ring.style.left='50%';ring.style.top='50%';ring.style.width='0';ring.style.height='0';
+  card.className='gd-card mid';card.style.bottom='';card.style.top='';card.style.transform='';
+  card.style.maxHeight=(H-40)+'px';
+ }
+ card.classList.remove('tight');
+ if(card.scrollHeight>card.clientHeight+1)card.classList.add('tight');
+}
+function show(){
+ var s=STEPS[i],last=i===STEPS.length-1,card=q('.gd-card'),d='';
+ for(var k=0;k<STEPS.length;k++)d+='<i'+(k===i?' class="on"':'')+'></i>';
+ card.innerHTML='<div class="gd-top"><span class="gd-n">Passo '+(i+1)+' di '+STEPS.length+'</span>'+(last?'':'<button class="gd-skip" data-g="skip">Salta la guida</button>')+'</div>'
+  +'<h2 id="gd-t">'+s.t+'</h2><p id="gd-b">'+s.b+'</p><div class="gd-dots" aria-hidden="true">'+d+'</div>'
+  +'<div class="gd-row">'+(i>0?'<button class="gd-bk" data-g="back">Indietro</button>':'')+'<button class="gd-go" data-g="next">'+(s.go||'Avanti')+'</button></div>';
+ if(s.tab){var cu=document.querySelector('.navb[aria-current="page"]');if(!cu||cu.getAttribute('data-v')!==s.tab)goTab(s.tab)}
+ place();setTimeout(place,140);
+ var g=q('.gd-go');if(g){try{g.focus({preventScroll:true})}catch(e){g.focus()}}card.scrollTop=0;
+}
+function close(){
+ mark();
+ if(root){root.remove();root=null}
+ document.removeEventListener('keydown',onKey,true);window.removeEventListener('resize',place);
+ goTab(startTab||'oggi');
+ try{if(lastFocus&&lastFocus.focus)lastFocus.focus()}catch(e){}
+}
+function onKey(e){
+ if(!root)return;
+ if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return}
+ if(e.key==='Tab'){
+  var b=root.querySelectorAll('button');if(!b.length)return;
+  var f=b[0],l=b[b.length-1];
+  if(!root.contains(document.activeElement)){e.preventDefault();f.focus()}
+  else if(e.shiftKey&&document.activeElement===f){e.preventDefault();l.focus()}
+  else if(!e.shiftKey&&document.activeElement===l){e.preventDefault();f.focus()}
+ }
+}
+function start(){
+ if(root)return;
+ var a=document.querySelector('.navb[aria-current="page"]');startTab=a?a.getAttribute('data-v'):'oggi';
+ lastFocus=document.activeElement;i=0;
+ root=document.createElement('div');root.id='gd';
+ root.innerHTML='<div class="gd-ring"></div><div class="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-t" aria-describedby="gd-b"></div>';
+ root.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('[data-g]');if(!b)return;
+  var g=b.getAttribute('data-g');
+  if(g==='skip'){close();return}
+  if(g==='back'){if(i>0){i--;show()}return}
+  if(i>=STEPS.length-1){close();return}
+  i++;show();
+ });
+ ['touchstart','touchmove','touchend','touchcancel','pointerdown','pointermove','pointerup','pointercancel'].forEach(function(t){root.addEventListener(t,function(e){e.stopPropagation()},{passive:true})});
+ var sx=0,sy=0,tr=false;
+ root.addEventListener('touchstart',function(e){if(e.touches.length!==1){tr=false;return}sx=e.touches[0].clientX;sy=e.touches[0].clientY;tr=true},{passive:true});
+ root.addEventListener('touchend',function(e){if(!tr)return;tr=false;var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5)return;if(dx<0){if(i<STEPS.length-1){i++;show()}}else if(i>0){i--;show()}},{passive:true});
+ document.body.appendChild(root);
+ document.addEventListener('keydown',onKey,true);window.addEventListener('resize',place);
+ show();
+}
+function seen(){try{return localStorage.getItem(LS)==='1'}catch(e){return true}}
+function empty(){
+ try{
+  var d=JSON.parse(localStorage.getItem(DATA)||'null');if(!d)return true;
+  return ['events','lessons','tasks','contacts','notes','classes','students','docs'].every(function(k){return !(d[k]&&d[k].length)});
+ }catch(e){return true}
+}
+function busy(){return !!(document.getElementById('authgate')||document.getElementById('applock')||document.getElementById('ov')||document.documentElement.classList.contains('alk-on'))}
+var t0=Date.now(),iv=setInterval(function(){
+ if(seen()||root){if(seen()){clearInterval(iv);watching=false}return}
+ if(busy()||!document.querySelector('.navb')){t0=Date.now();return}
+ var logged=false;try{logged=!!(JSON.parse(localStorage.getItem('ad-sb')||'{}').uid)}catch(e){}
+ if(logged&&Date.now()-t0<4000)return;
+ clearInterval(iv);
+ if(empty())start();
+ watching=false;
+},900);
+if(seen())watching=false;
+window.AgendaGuida={start:start,active:function(){return !!root||watching}};
+})();
 </script>
 </body>
 </html>
