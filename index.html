@@ -7096,17 +7096,17 @@ if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
 </style>
 <script id="guida-js">
 (function(){
-var LS='ad-guide',DATA='agenda-docente.v3',i=0,root=null,startTab='',lastFocus=null,watching=true;
+var LS='ad-guide',DATA='agenda-docente.v3',i=0,root=null,startTab='',lastFocus=null,watching=true,tick=0;
 var STEPS=[
  {t:'Benvenuto in Agenda docente',b:'Orario, impegni, classi e voti in un’unica app. Ti mostro in un minuto dove trovare ogni cosa. Puoi saltare la guida quando vuoi: la ritrovi in Altro › Impostazioni.',go:'Iniziamo'},
- {tab:'oggi',sel:'.navb[data-v="oggi"]',t:'Oggi',b:'La giornata di oggi: lezioni, impegni e scadenze in una sola schermata. Scorri la settimana in alto per cambiare giorno.'},
- {tab:'cal',sel:'.navb[data-v="cal"]',t:'Calendario',b:'Gli impegni e le lezioni svolte, giorno per giorno. Da qui puoi anche esportare il mese in PDF.'},
+ {tab:'oggi',pad:2,sel:'.navb[data-v="oggi"]',t:'Oggi',b:'La giornata di oggi: lezioni, impegni e scadenze in una sola schermata. Scorri la settimana in alto per cambiare giorno.'},
+ {tab:'cal',pad:2,sel:'.navb[data-v="cal"]',t:'Calendario',b:'Gli impegni e le lezioni svolte, giorno per giorno. Da qui puoi anche esportare il mese in PDF.'},
  {tab:'cal',sel:'.schoolb',t:'La tua scuola',b:'In alto vedi la scuola attiva. Toccala per darle il nome giusto (Modifica), aggiungerne altre o scegliere «Tutte le scuole»: così vedi insieme gli impegni di ognuna.'},
  {tab:'cal',sel:'[data-act="yearopen"]',t:'Anno scolastico',b:'Questo pulsante apre l’anno scolastico. Scegli l’anno, indica quando iniziano e finiscono le lezioni (fuori da quelle date presenze e assenze non si contano) e dividi l’anno in due quadrimestri o tre trimestri, con le date di ogni periodo.'},
  {tab:'cal',sel:'[data-act="search"]',t:'Cerca',b:'La lente di ingrandimento cerca in tutta l’agenda: alunni, impegni, attività, annotazioni, contatti, classi e lezioni, e anche le funzioni dell’app, come Annotazioni o Archivio documenti. Scrivi almeno due lettere.'},
- {tab:'ord',sel:'.navb[data-v="ord"]',t:'Orario',b:'Le tue ore di lezione della settimana. Puoi inserirle a mano oppure importarle da una foto.'},
- {tab:'classi',sel:'.navb[data-v="classi"]',t:'Classi',b:'Le tue classi con alunni, voti e verifiche. Tocca una classe per vedere gli alunni e le medie.'},
- {tab:'altro',sel:'.navb[data-v="altro"]',t:'Altro',b:'Qui trovi il resto: attività, assenze e permessi, ore collegiali, colloqui, supplenze, annotazioni, documenti, contatti e strumenti pratici come timer e squadre.'},
+ {tab:'ord',pad:2,sel:'.navb[data-v="ord"]',t:'Orario',b:'Le tue ore di lezione della settimana. Puoi inserirle a mano oppure importarle da una foto.'},
+ {tab:'classi',pad:2,sel:'.navb[data-v="classi"]',t:'Classi',b:'Le tue classi con alunni, voti e verifiche. Tocca una classe per vedere gli alunni e le medie.'},
+ {tab:'altro',pad:2,chk:'[data-act="nav"][data-v="orecoll"]',sel:'.navb[data-v="altro"]',t:'Altro',b:'Qui trovi il resto: attività, assenze e permessi, ore collegiali, colloqui, supplenze, annotazioni, documenti, contatti e strumenti pratici come timer e squadre.'},
  {tab:'altro',sel:'[data-act="nav"][data-v="doc"]',scroll:1,t:'Archivio documenti',b:'Nella scheda Impegni puoi aggiungere il file con gli impegni dell’anno (PDF, Word, testo o CSV): l’app lo legge e, dopo il tuo ok, li aggiunge al calendario. Il file non viene salvato.'},
  {tab:'altro',sel:'[data-act="nav"][data-v="orecoll"]',scroll:1,t:'Ore collegiali',b:'Conta le 40 ore dei collegi docenti e le 40 dei consigli di classe. Gli impegni letti dal file compaiono qui da soli: segna Presente o Assente per ognuno e le ore si contano solo dove eri presente. Tocca una riga per cambiare data e orario o per eliminarla.'},
  {tab:'oggi',sel:'#fab',t:'Aggiungere una cosa nuova',b:'Il pulsante + crea qualcosa di nuovo e cambia in base alla schermata: un impegno, un voto, una classe, un’attività…'},
@@ -7131,14 +7131,15 @@ function dimBar(on){
  }catch(e){}
 }
 function mark(){try{localStorage.setItem(LS,'1')}catch(e){}}
-function place(){
+function place(doScroll){
  if(!root)return;
  var s=STEPS[i],card=q('.gd-card'),ring=q('.gd-ring'),el=s.sel?document.querySelector(s.sel):null;
- if(el&&s.scroll){try{el.scrollIntoView({block:'start'});var ap=document.getElementById('app');if(ap)ap.scrollTop=Math.max(0,ap.scrollTop-90)}catch(e){}}
+ if(el&&s.scroll&&doScroll===true){try{el.scrollIntoView({block:'start'});var ap=document.getElementById('app');if(ap)ap.scrollTop=Math.max(0,ap.scrollTop-90)}catch(e){}}
  var r=el?el.getBoundingClientRect():null,H=window.innerHeight;
  if(r&&r.width>0&&r.height>0){
   ring.className='gd-ring on';
-  ring.style.left=(r.left-6)+'px';ring.style.top=(r.top-6)+'px';ring.style.width=(r.width+12)+'px';ring.style.height=(r.height+12)+'px';
+  var pd=s.pad==null?6:s.pad;
+  ring.style.left=(r.left-pd)+'px';ring.style.top=(r.top-pd)+'px';ring.style.width=(r.width+pd*2)+'px';ring.style.height=(r.height+pd*2)+'px';
   card.className='gd-card';card.style.transform='';
   if(r.top>H/2){card.style.top='auto';card.style.bottom=(H-r.top+18)+'px';card.style.maxHeight=Math.max(160,r.top-30)+'px'}
   else{card.style.bottom='auto';card.style.top=(r.bottom+18)+'px';card.style.maxHeight=Math.max(160,H-r.bottom-30)+'px'}
@@ -7157,13 +7158,14 @@ function show(){
  card.innerHTML='<div class="gd-top"><span class="gd-n">Passo '+(i+1)+' di '+STEPS.length+'</span>'+(last?'':'<button class="gd-skip" data-g="skip">Salta la guida</button>')+'</div>'
   +'<h2 id="gd-t">'+s.t+'</h2><p id="gd-b">'+s.b+'</p><div class="gd-dots" aria-hidden="true">'+d+'</div>'
   +'<div class="gd-row">'+(i>0?'<button class="gd-bk" data-g="back">Indietro</button>':'')+'<button class="gd-go" data-g="next">'+(s.go||'Avanti')+'</button></div>';
- if(s.tab){var cu=document.querySelector('.navb[aria-current="page"]');if(!cu||cu.getAttribute('data-v')!==s.tab)goTab(s.tab)}
- place();setTimeout(place,140);
+ if(s.tab){var cu=document.querySelector('.navb[aria-current="page"]');if(!cu||cu.getAttribute('data-v')!==s.tab)goTab(s.tab);var need=s.chk||s.sel;if(need&&!document.querySelector(need))goTab(s.tab)}
+ place(true);setTimeout(function(){place(true)},140);
  var g=q('.gd-go');if(g){try{g.focus({preventScroll:true})}catch(e){g.focus()}}card.scrollTop=0;
 }
 function close(){
  mark();
  if(root){root.remove();root=null}
+ clearInterval(tick);
  dimBar(false);
  document.removeEventListener('keydown',onKey,true);window.removeEventListener('resize',place);
  goTab(startTab||'oggi');
@@ -7200,6 +7202,7 @@ function start(){
  root.addEventListener('touchend',function(e){if(!tr)return;tr=false;var t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5)return;if(dx<0){if(i<STEPS.length-1){i++;show()}}else if(i>0){i--;show()}},{passive:true});
  document.body.appendChild(root);
  dimBar(true);
+ clearInterval(tick);tick=setInterval(place,150);
  document.addEventListener('keydown',onKey,true);window.addEventListener('resize',place);
  show();
 }
