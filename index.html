@@ -3979,7 +3979,8 @@ function srGo(i){
   if(window.__pullSearch)return;window.__pullSearch=1;
   var y0=null,x0=0,dy=0,active=false,ind=null,TH=90;
   function atTop(){var a=document.getElementById('app');return !a||a.scrollTop<=3}
-  function blocked(t){return sheet||document.getElementById('srch')||(t&&t.closest&&t.closest('#weekscroller,#nav,input,textarea,select,.sheet,.ov,.srch'))}
+  function locked(){var c=window.AgendaConfig,g=window.AgendaGuida;return document.getElementById('authgate')||document.getElementById('applock')||(c&&c.active&&c.active())||(g&&g.active&&g.active())}
+  function blocked(t){return locked()||sheet||document.getElementById('srch')||(t&&t.closest&&t.closest('#weekscroller,#nav,input,textarea,select,.sheet,.ov,.srch'))}
   function ensure(){if(!ind){ind=document.createElement('div');ind.id='pullind';ind.setAttribute('aria-hidden','true');ind.innerHTML=ic('search',18)+'<span></span>';document.body.appendChild(ind)}return ind}
   function hide(){if(ind){ind.style.transition='opacity .15s,transform .2s';ind.style.opacity='0';ind.style.transform='translate(-50%,-48px)'}}
   document.addEventListener('touchstart',function(e){
