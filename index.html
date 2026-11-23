@@ -2231,7 +2231,7 @@ function vSettings(){
   h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="applock"><span class="hi">'+ic('lock',24)+'</span><span class="grow"><span class="t">Blocco app</span><span class="m">'+esc(window.AgendaLock?window.AgendaLock.label():'Non attivo')+'</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   if(bkMsg){h+='<p class="m" role="status" style="margin-top:10px">'+esc(bkMsg)+'</p>';bkMsg=''}
   h+='<div style="margin-top:12px">';
-  h+='<div class="calcards" style="margin-top:0"><button class="rowbtn mid" data-act="guide"><span class="hi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.8-1.1 1.6"/><path d="M12 16.6v.1"/></svg></span><span class="grow"><span class="t">Guida all\'uso</span><span class="m">Rivedi il percorso di benvenuto</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
+  h+='<div class="calcards" style="margin-top:0"><button class="rowbtn mid" data-act="guide"><span class="hi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.8-1.1 1.6"/><path d="M12 16.6v.1"/></svg></span><span class="grow"><span class="t">Guida all\'uso</span><span class="m">Rivedi il percorso di benvenuto</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="install"><span class="hi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M12 8v6M9.5 12l2.5 2.5 2.5-2.5"/></svg></span><span class="grow"><span class="t">Installa l’app</span><span class="m">Aggiungila alla schermata Home</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   h+='<div class="calcards" style="margin-top:10px"><button class="rowbtn mid" data-act="nav" data-v="privacy"><span class="hi">'+ic('shield',24)+'</span><span class="grow"><span class="t">Privacy</span><span class="m">Informativa ed elimina dati</span></span><span class="chev">'+ic('right',20)+'</span></button></div>';
   h+='</div>';
   return h;
@@ -3979,7 +3979,7 @@ function srGo(i){
   if(window.__pullSearch)return;window.__pullSearch=1;
   var y0=null,x0=0,dy=0,active=false,ind=null,TH=90;
   function atTop(){var a=document.getElementById('app');return !a||a.scrollTop<=3}
-  function locked(){var c=window.AgendaConfig,g=window.AgendaGuida;return document.getElementById('authgate')||document.getElementById('applock')||(c&&c.active&&c.active())||(g&&g.active&&g.active())}
+  function locked(){var c=window.AgendaConfig,g=window.AgendaGuida;return document.getElementById('authgate')||document.getElementById('applock')||(c&&c.active&&c.active())||(g&&g.active&&g.active())||document.getElementById('inst')}
   function blocked(t){return locked()||sheet||document.getElementById('srch')||(t&&t.closest&&t.closest('#weekscroller,#nav,input,textarea,select,.sheet,.ov,.srch'))}
   function ensure(){if(!ind){ind=document.createElement('div');ind.id='pullind';ind.setAttribute('aria-hidden','true');ind.innerHTML=ic('search',18)+'<span></span>';document.body.appendChild(ind)}return ind}
   function hide(){if(ind){ind.style.transition='opacity .15s,transform .2s';ind.style.opacity='0';ind.style.transform='translate(-50%,-48px)'}}
@@ -6448,6 +6448,7 @@ async function onAgendaClick(e){
   var a=el.dataset.act;
   if(a==='nav'){if(el.classList.contains('navb')&&Date.now()-(window.__navPick||0)<1500)return;if(el.dataset.v!==cur&&cur!=='stud')ui().collDay=null;if(el.dataset.v!=='coll')studFrom='';if(el.dataset.v===cur){var apx=document.getElementById('app'),sty=Math.max(apx?apx.scrollTop:0,window.pageYOffset||0);if(sty>40){if(apx&&apx.scrollTop>0)apx.scrollTo({top:0,behavior:'smooth'});if((window.pageYOffset||0)>0)window.scrollTo({top:0,behavior:'smooth'});return}}if(el.classList.contains('navb'))tabGo(el.dataset.v);else cur=el.dataset.v;render();resetScroll();return}
   else if(a==='guide'){if(window.AgendaGuida)window.AgendaGuida.start();return}
+  else if(a==='install'){if(window.AgendaInstall)window.AgendaInstall.open();return}
   else if(a==='wkmove'){var wsc=document.getElementById('weekscroller');if(!wsc)return;wsc.dispatchEvent(new Event('wheel'));var wi=(wsc._ti!=null&&Date.now()<wsc._te)?wsc._ti:Math.round(wsc.scrollLeft/wsc.clientWidth);wi=Math.max(0,Math.min(wsc.children.length-1,wi+Number(el.dataset.d)));wsc._ti=wi;wsc._te=Date.now()+800;wsc.scrollTo({left:wi*wsc.clientWidth,behavior:'smooth'});return}
   else if(a==='wktoday'){var wsc=document.getElementById('weekscroller'),wt=iso(new Date()),wb=wsc&&wsc.querySelector('button.oggi');if(!wb){ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render();return}var wdl=wb.parentNode.getBoundingClientRect().left-wsc.getBoundingClientRect().left;if(Math.abs(wdl)<2){ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render();return}var wtm,wfin=function(){clearTimeout(wtm);wtm=setTimeout(function(){wsc.removeEventListener('scroll',wfin);ui()[(wsc&&wsc.dataset.key)||'oggi']=wt;render()},160)};wsc.addEventListener('scroll',wfin);wsc.scrollBy({left:wdl,behavior:'smooth'});wfin();return}
   else if(a==='gotoday'){ui().oggi=el.dataset.date;render();return}
@@ -7154,13 +7155,14 @@ if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
     var ua=navigator.userAgent||'';
     var ios=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
     var standalone=navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
-    if(!ios||standalone||location.protocol.indexOf('http')!==0)return;
+    var mobile=ios||/android/i.test(ua);
+    if(!mobile||standalone||location.protocol.indexOf('http')!==0)return;
     var seen=false;try{seen=localStorage.getItem('agenda_ios_hint')==='1'}catch(e){}
     if(seen)return;
     var box=document.createElement('div');
     box.id='ioshint';box.setAttribute('role','note');
-    box.innerHTML='<p><strong>Usala come app.</strong> Tocca <b>Condividi</b> (il quadrato con la freccia) e poi <b>Aggiungi alla schermata Home</b>.</p><button type="button">Chiudi</button>';
-    box.querySelector('button').addEventListener('click',function(){try{localStorage.setItem('agenda_ios_hint','1')}catch(e){}box.remove()});
+    box.innerHTML='<p><strong>Usala come app.</strong> Aggiungila alla schermata Home.</p><button type="button" data-how="1">Come fare</button><button type="button">Chiudi</button>';
+    box.querySelector('[data-how]').addEventListener('click',function(){try{localStorage.setItem('agenda_ios_hint','1')}catch(e){}box.remove();if(window.AgendaInstall)window.AgendaInstall.open()});box.querySelector('button:not([data-how])').addEventListener('click',function(){try{localStorage.setItem('agenda_ios_hint','1')}catch(e){}box.remove()});
     var tryShow=function(){var g=window.AgendaGuida,c=window.AgendaConfig;if((g&&g.active&&g.active())||(c&&c.active&&c.active())){setTimeout(tryShow,700);return}document.body.appendChild(box)};
     setTimeout(tryShow,300);
   }catch(e){}
@@ -7325,6 +7327,104 @@ var t0=Date.now(),iv=setInterval(function(){
 },900);
 if(seen())watching=false;
 window.AgendaGuida={start:start,active:function(){return !!root||watching}};
+})();
+</script>
+<style id="install-css">
+#inst{position:fixed;inset:0;z-index:1200;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,16,40,.66);touch-action:pan-y;overscroll-behavior:contain;font-family:var(--font-ui,system-ui,sans-serif)}
+#inst .in-card{width:100%;max-width:460px;max-height:90%;overflow:auto;background:var(--card);color:var(--ink);border-radius:22px 22px 0 0;padding:16px 18px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+@media (min-width:600px){#inst{align-items:center}#inst .in-card{border-radius:22px;padding-bottom:18px}}
+#inst .in-top{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:32px}
+#inst .in-n{font-size:13px;font-weight:700;color:var(--ink2)}
+#inst .in-x{border:0;background:none;color:var(--ink2);font:700 14px var(--font-ui,system-ui,sans-serif);padding:8px 4px;cursor:pointer;text-decoration:underline}
+#inst h2{font:900 22px/1.25 var(--font-head,system-ui,sans-serif);margin:6px 0 6px}
+#inst p{margin:0 0 12px;color:var(--ink2);font-size:16px;line-height:1.45}
+#inst ol{list-style:none;padding:0;margin:0 0 12px;counter-reset:s}
+#inst li{counter-increment:s;display:flex;gap:12px;align-items:flex-start;margin:0 0 12px;font-size:16px;line-height:1.45;color:var(--ink)}
+#inst li:before{content:counter(s);flex:0 0 28px;height:28px;border-radius:50%;background:var(--blue-bg);color:var(--blue);font:900 15px/28px var(--font-ui,system-ui,sans-serif);text-align:center}
+#inst li svg{vertical-align:-4px;color:var(--blue)}
+#inst .in-note{font-size:14px;margin-bottom:14px}
+#inst .in-ok{display:flex;align-items:center;gap:10px;background:var(--green-bg);color:var(--green);border-radius:14px;padding:12px 14px;font-weight:700;margin:0 0 12px}
+#inst .in-row{display:flex;gap:10px;margin-top:4px}
+#inst .in-row button{flex:1;min-height:48px;border-radius:14px;border:0;font:700 17px var(--font-ui,system-ui,sans-serif);cursor:pointer;touch-action:manipulation}
+#inst .in-sec{background:var(--blue-bg);color:var(--blue)}
+#inst .in-go{background:var(--blue);color:var(--on-blue)}
+#inst button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+</style>
+<script id="install-js">
+(function(){
+if(window.AgendaInstall)return;
+var ua=navigator.userAgent||'',root=null,dp=null,last=null;
+var IOS=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+var AND=/android/i.test(ua);
+var IOSALT=IOS&&/crios|fxios|edgios|opios|gsa\/|duckduckgo/i.test(ua);
+var EDGE=/edg\//i.test(ua),FF=/firefox|fxios/i.test(ua),SAM=/samsungbrowser/i.test(ua);
+var SAF=!IOS&&/safari/i.test(ua)&&!/chrome|chromium|crios|android/i.test(ua);
+var SHARE='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3.5M8.2 7 12 3.2 15.8 7"/><path d="M7.5 10H6.5A1.5 1.5 0 0 0 5 11.5v7A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-1"/></svg>';
+function standalone(){try{return navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)}catch(e){return false}}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e});
+window.addEventListener('appinstalled',function(){dp=null;if(root)render()});
+function content(){
+  if(standalone())return {t:'L’app è già installata',ok:'Stai usando Agenda docente come app.',n:'Apri sempre l’app dall’icona nella schermata Home: i promemoria e le notifiche funzionano da lì.'};
+  var home='Apri Agenda docente dalla nuova icona: da lì funzionano anche i promemoria.';
+  if(IOS){
+    var s=['Tocca <b>Condividi</b> '+SHARE+' nella barra di Safari (in basso su iPhone, in alto su iPad).','Scorri il menu e tocca <b>Aggiungi alla schermata Home</b>. Se non lo vedi, scorri fino in fondo all’elenco.','Tocca <b>Aggiungi</b> in alto a destra.',home];
+    if(IOSALT)return {t:'Aggiungi l’app alla schermata Home',i:'Su iPhone e iPad l’installazione si fa da <b>Safari</b>. Copia l’indirizzo, aprilo in Safari e segui i passi.',copy:true,s:s,n:'Per le notifiche serve iOS 16.4 o successivo, e l’app aperta dall’icona.'};
+    return {t:'Aggiungi l’app alla schermata Home',s:s,n:'Per le notifiche serve iOS 16.4 o successivo, e l’app aperta dall’icona.'};
+  }
+  if(AND){
+    var a=FF?['Tocca i tre puntini <b>⋮</b> del browser.','Tocca <b>Installa</b>.','Conferma.',home]:SAM?['Tocca il menu <b>≡</b> in basso a destra.','Tocca <b>Aggiungi pagina a</b> e poi <b>Schermata Home</b>.','Conferma con <b>Aggiungi</b>.',home]:['Tocca i tre puntini <b>⋮</b> in alto a destra del browser.','Tocca <b>Installa app</b> (o <b>Aggiungi a schermata Home</b>).','Conferma con <b>Installa</b>.',home];
+    return {t:'Installa l’app sul telefono',i:dp?'Puoi installarla subito con un tocco, oppure seguire i passi qui sotto.':'',now:!!dp,s:a,n:'Dopo l’installazione l’icona compare nella schermata Home e tra le app.'};
+  }
+  if(FF)return {t:'Installa l’app sul computer',i:'Firefox sul computer non può installare le app. Apri questa pagina in <b>Chrome</b> o <b>Edge</b> e segui i passi, oppure aggiungila ai segnalibri.',s:['Apri questa pagina in Chrome o Edge.','Clicca l’icona di installazione nella barra degli indirizzi.','Conferma con <b>Installa</b>.'],copy:true};
+  if(SAF)return {t:'Aggiungi l’app al Dock',s:['Dal menu in alto scegli <b>File</b>.','Clicca <b>Aggiungi al Dock</b> (serve macOS Sonoma o successivo).','Conferma con <b>Aggiungi</b>.','Apri Agenda docente dal Dock: si apre in una finestra tutta sua.']};
+  return {t:'Installa l’app sul computer',i:dp?'Puoi installarla subito con un clic, oppure seguire i passi qui sotto.':'',now:!!dp,s:EDGE?['Clicca i tre puntini <b>…</b> in alto a destra.','Scegli <b>App</b> e poi <b>Installa questo sito come app</b>.','Conferma con <b>Installa</b>.','Apri Agenda docente dall’icona sul desktop o dal menu Start.']:['Nella barra degli indirizzi clicca l’icona di installazione (un monitor con una freccia) a destra.','Se non la vedi, apri il menu <b>⋮</b> e cerca la voce <b>Installa</b>.','Conferma con <b>Installa</b>.','Apri Agenda docente dall’icona sul desktop o dal menu delle app.']};
+}
+function render(){
+  var c=content(),h='<div class="in-card"><div class="in-top"><span class="in-n">Installa l’app</span><button type="button" class="in-x" data-i="close">Chiudi</button></div><h2 id="inst-t">'+c.t+'</h2>';
+  if(c.ok)h+='<div class="in-ok" role="status">✓ '+c.ok+'</div>';
+  if(c.i)h+='<p>'+c.i+'</p>';
+  if(c.now)h+='<div class="in-row" style="margin:0 0 14px"><button type="button" class="in-go" data-i="now">Installa ora</button></div>';
+  if(c.s){h+='<ol>';c.s.forEach(function(x){h+='<li><span>'+x+'</span></li>'});h+='</ol>'}
+  if(c.n)h+='<p class="in-note">'+c.n+'</p>';
+  h+='<div class="in-row">'+(c.copy?'<button type="button" class="in-sec" data-i="copy">Copia indirizzo</button>':'')+'<button type="button" class="'+(c.now?'in-sec':'in-go')+'" data-i="close">Ho capito</button></div></div>';
+  root.innerHTML=h;
+  var f=root.querySelector('.in-x');if(f)try{f.focus()}catch(e){}
+}
+function close(){
+  if(!root)return;
+  document.removeEventListener('keydown',onKey,true);
+  root.remove();root=null;
+  try{if(last&&last.focus)last.focus()}catch(e){}
+}
+function onKey(e){
+  if(!root)return;
+  if(e.key==='Escape'){e.preventDefault();close();return}
+  if(e.key!=='Tab')return;
+  var f=root.querySelectorAll('button');if(!f.length)return;
+  var a=f[0],b=f[f.length-1];
+  if(e.shiftKey&&document.activeElement===a){e.preventDefault();b.focus()}
+  else if(!e.shiftKey&&document.activeElement===b){e.preventDefault();a.focus()}
+}
+function open(){
+  if(root)return;
+  last=document.activeElement;
+  root=document.createElement('div');root.id='inst';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','inst-t');
+  root.addEventListener('click',function(e){
+    if(e.target===root){close();return}
+    var b=e.target.closest&&e.target.closest('[data-i]');if(!b)return;
+    var g=b.getAttribute('data-i');
+    if(g==='close')close();
+    else if(g==='now'&&dp){var d=dp;dp=null;try{d.prompt();d.userChoice.then(function(){if(root)render()},function(){})}catch(x){}render()}
+    else if(g==='copy'){
+      var done=function(ok){b.textContent=ok?'Indirizzo copiato':'Copia non riuscita'};
+      try{navigator.clipboard.writeText(location.href).then(function(){done(true)},function(){done(false)})}catch(x){done(false)}
+    }
+  });
+  ['touchstart','touchmove'].forEach(function(t){root.addEventListener(t,function(e){e.stopPropagation()},{passive:true})});
+  document.body.appendChild(root);render();
+  document.addEventListener('keydown',onKey,true);
+}
+window.AgendaInstall={open:open,close:close,active:function(){return !!root}};
 })();
 </script>
 </body>
