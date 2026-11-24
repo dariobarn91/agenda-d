@@ -2443,6 +2443,7 @@ function exportCancelIcs(){
 function notifyCard(c){
   var perm=notifyPerm();
   var on=!!(c&&c.on)&&perm==='granted';
+  var need=false;try{need=(/iphone|ipad|ipod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))&&!onHomeScreen()}catch(e){}
   var h='<div class="rm rm-notify"><h2>Notifiche</h2>';
   if(on&&c.push){
     h+='<p>Gli avvisi arrivano anche con l\'agenda chiusa, se l\'icona è sulla Home.</p>';
@@ -2450,9 +2451,11 @@ function notifyCard(c){
   }else if(on){
     h+='<p>Gli avvisi partono con l\'agenda aperta. Per riceverli anche da chiusa, salva l\'icona sulla Home e premi di nuovo Attiva.</p>';
     h+='<button class="btn rm-go" data-act="enablenotify">Attiva anche a app chiusa</button>';
+    if(need)h+='<button class="btn rm-go ghost" data-act="install" style="margin-top:10px">Come salvare l’app sulla Home</button>';
   }else{
     h+='<p>Attiva le notifiche per ricevere gli avvisi da questa app.</p>';
-    h+='<button class="btn rm-go" data-act="enablenotify">Attiva le notifiche</button>';
+    if(need)h+='<p class="m">Su iPhone le notifiche arrivano solo se l’app è sulla schermata Home e la apri da lì. Prima aggiungila alla Home.</p><button class="btn rm-go" data-act="install" style="margin-bottom:10px">Come salvare l’app sulla Home</button>';
+    h+='<button class="btn rm-go'+(need?' ghost':'')+'" data-act="enablenotify">Attiva le notifiche</button>';
     if(perm==='denied')h+='<p class="m" style="margin:12px 0 0">Se non arriva la richiesta, abilita le notifiche per questo sito dalle impostazioni del telefono.</p>';
   }
   return h+'</div>';
@@ -2605,7 +2608,7 @@ function armReminders(){
 async function enableNotify(permPromise){
   var N=null;
   try{N=typeof Notification!=='undefined'?Notification:null}catch(e){N=null}
-  if(!N&&!permPromise){flash='Su iPhone apri l\'agenda dall\'icona sulla Home, poi premi di nuovo Attiva le notifiche.';render();return}
+  if(!N&&!permPromise){var inst=!onHomeScreen();flash=inst?'Prima aggiungi l’app alla schermata Home: poi aprila da lì e premi di nuovo Attiva le notifiche.':'Su iPhone apri l\'agenda dall\'icona sulla Home, poi premi di nuovo Attiva le notifiche.';render();if(inst&&window.AgendaInstall)try{window.AgendaInstall.open()}catch(e){}return}
   var perm;
   try{perm=permPromise?await permPromise:(N?await N.requestPermission():'denied')}catch(e){perm='denied'}
   if(perm!=='granted'){flash='Il telefono non ha dato il permesso. Vai in Impostazioni > Notifiche > Agenda docente e attivalo.';render();return}
@@ -7348,7 +7351,7 @@ window.AgendaGuida={start:start,active:function(){return !!root||watching}};
 #inst .in-row button{flex:1;min-height:48px;border-radius:14px;border:0;font:700 17px var(--font-ui,system-ui,sans-serif);cursor:pointer;touch-action:manipulation}
 #inst .in-sec{background:var(--blue-bg);color:var(--blue)}
 #inst .in-go{background:var(--blue);color:var(--on-blue)}
-#inst button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#inst .in-card:focus{outline:none}#inst button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 </style>
 <script id="install-js">
 (function(){
@@ -7388,7 +7391,7 @@ function render(){
   if(c.n)h+='<p class="in-note">'+c.n+'</p>';
   h+='<div class="in-row">'+(c.copy?'<button type="button" class="in-sec" data-i="copy">Copia indirizzo</button>':'')+'<button type="button" class="'+(c.now?'in-sec':'in-go')+'" data-i="close">Ho capito</button></div></div>';
   root.innerHTML=h;
-  var f=root.querySelector('.in-x');if(f)try{f.focus()}catch(e){}
+  var f=root.querySelector('.in-card');if(f){f.setAttribute('tabindex','-1');try{f.focus({preventScroll:true})}catch(e){}}
 }
 function close(){
   if(!root)return;
@@ -7402,7 +7405,7 @@ function onKey(e){
   if(e.key!=='Tab')return;
   var f=root.querySelectorAll('button');if(!f.length)return;
   var a=f[0],b=f[f.length-1];
-  if(e.shiftKey&&document.activeElement===a){e.preventDefault();b.focus()}
+  if(e.shiftKey&&(document.activeElement===a||document.activeElement===root.querySelector('.in-card'))){e.preventDefault();b.focus()}
   else if(!e.shiftKey&&document.activeElement===b){e.preventDefault();a.focus()}
 }
 function open(){
