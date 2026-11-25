@@ -6008,11 +6008,18 @@ function renderOri(){
 /* ---------- voti di una verifica da foto o file ---------- */
 var VOTI_PROMPT='Leggi i voti di una verifica o di un registro (foto, scansione o tabella: per esempio un elenco con cognome, nome e uno o più voti) e restituisci SOLO un JSON, senza altro testo e senza backtick, con questa forma: {"colonne":["1","2"],"voti":[{"cognome":"Rossi","nome":"Luca","voti":["7+","6"]}],"note":""}. Regole: "voti" ha un elemento per ogni colonna di voto della tabella, nell’ordine, come scritto (per esempio 7, 7,5, 7+, 6-, 5/6); se la cella è vuota o è un’assenza, stringa vuota. Con una sola colonna "voti" ha un solo elemento. "colonne" contiene l’intestazione di ogni colonna di voto (per esempio il numero o la data), oppure stringhe vuote. Ti do sotto l’elenco degli alunni della classe per riconoscere i nomi, ma non inventare voti: riporta solo quelli che vedi. Ignora medie, date di nascita, numeri di registro e ogni altra colonna. In "note" una frase breve in italiano su eventuali problemi, altrimenti stringa vuota.';
 function vtTok(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(Boolean)}
+var vtOcrMode=false;
 function vtGrade(t){
   t=String(t==null?'':t).trim();
   if(/^\d{2}[.,]\d{2}$/.test(t))return null;
   var r=/^(\d{1,2})\s*[\/\-–]\s*(\d{1,2})$/.exec(t);
   if(r&&Number(r[2])===Number(r[1])+1)return Number(r[1])+0.5;
+  if(vtOcrMode){
+    var h=/^(\d)\s*(?:%|1\/2|¥|[vVyY])$/.exec(t);if(h)return Number(h[1])+0.5;
+    if(/^[Tt][vVyYhH%]$/.test(t))return 7.5;
+    if(t==='1')return null;
+    var d=/^(\d)[:;](\d)$/.exec(t);if(d)return Number(d[1])+Number(d[2])/10;
+  }
   return parseGrade(t);
 }
 function vtMatch(studs,entry){
@@ -6034,13 +6041,17 @@ function vtMatch(studs,entry){
 var VT_MARK=/^(a|ass|assente|sv|s\.?v\.?|nc|n\.?c\.?|e|g)$/i;
 /* voti di una riga: solo dopo il nome. key = posizione orizzontale (PDF) oppure numero di colonna */
 function vtRead(tokens,keyed){
-  var last=-1,g=[],ord=0;
-  tokens.forEach(function(k,i){if(/[a-zà-ÿ]/i.test(k.t)&&!VT_MARK.test(k.t))last=i});
+  var last=-1,g=[],ord=0,run=false;
+  for(var q=0;q<tokens.length;q++){
+    var s0=tokens[q].t,al=/[a-zà-ÿ]/i.test(s0)&&!/\d/.test(s0)&&!VT_MARK.test(s0);
+    if(al){run=true;last=q}else if(run)break;
+  }
   tokens.forEach(function(k,i){
     if(i<=last)return;
     var v=vtGrade(k.t);if(v===null)return;
     g.push({v:v,key:keyed?k.c:(k.i!==undefined?k.i:ord)});ord++;
   });
+  if(vtOcrMode&&!keyed)g.forEach(function(x,j){x.key=j-g.length});
   return g;
 }
 function vtTokens(l){
@@ -6113,6 +6124,18 @@ function vtErr(e){
   if(c==='not_granted'||c==='rate_limited')return oriErr(e);
   return 'Non sono riuscito a leggere il file. Riprova con una foto più nitida o con il file originale.';
 }
+async function vtOcrText(img){
+  var T=window.Tesseract,w=null;
+  try{
+    w=await T.createWorker('ita');
+    try{await w.setParameters({tessedit_pageseg_mode:'3'})}catch(e){}
+    var r=await w.recognize(img);
+    return String(r&&r.data&&r.data.text||'');
+  }catch(e){
+    var r2=await T.recognize(img,'ita');
+    return String(r2&&r2.data&&r2.data.text||'');
+  }finally{if(w){try{await w.terminate()}catch(e){}}}
+}
 async function startVotiImport(file){
   if(!file||!sheet||sheet.kind!=='test'||sheet.vtBusy)return;
   var S=sheet,studs=studsOf(S.cls);
@@ -6153,16 +6176,17 @@ async function startVotiImport(file){
       }else{
         ocr=true;vtSay('Sto leggendo il testo della foto. Alla prima volta può richiedere una quindicina di secondi.');
         await loadScript(LIBS.tesseract);
-        var res=await window.Tesseract.recognize(img,'ita');
-        textRows(String(res&&res.data&&res.data.text||'').split(/\r?\n/));
+        var otxt=await vtOcrText(img);
+        vtOcrMode=true;try{textRows(otxt.split(/\r?\n/))}finally{vtOcrMode=false}
       }
     }else throw {code:'filetype'};
     if(sheet!==S||!document.querySelector('.gv'))return;
     if(mode==='x'&&hdr.length){var mn=Math.min.apply(null,hdr.map(function(x){return x.c}))-10;cells=cells.filter(function(c){return c.key>=mn})}
     var cols=vtCols(cells,mode,hdr,labs);
     if(!cols.length){vtSay('Non ho trovato voti che riesco ad associare agli alunni di questa classe. Controlla che nel file ci siano cognome (e nome) e voto sulla stessa riga.');return}
-    var def=0;
+    var def=-1;
     cols.forEach(function(c,i){if(/^Voto /.test(c.label))def=i});
+    if(def<0){def=0;cols.forEach(function(c,i){if(c.n>cols[def].n)def=i})}
     S.vt={cols:cols,studs:studs,prev:{},ocr:ocr,cur:def};
     vtPick(S);vtFill(def);
   }catch(e){
