@@ -4364,7 +4364,7 @@ function testRowsHTML(ss,type,gv,mv){
         var isE=m==='e',es=(sheet&&sheet.ev&&sheet.ev[s.id])||'infortunio';
         return '<div class="rv mrow'+(a?' abs':'')+(isE?' eso':'')+'" data-msid="'+s.id+'" data-m="'+m+'" data-abs="'+(a?'1':'')+'" data-eso="'+(isE?es:'')+'" style="align-items:center">'+numHTML(s)+'<span class="grow t">'+esc(s.name)+(isE?esoSel(s.id,es):'')+'</span>'+(ua?'<button type="button" class="mkA'+(a?' on':'')+'" data-act="matabs" aria-pressed="'+(a?'true':'false')+'" aria-label="Assente">a</button>':'')+'<button type="button" class="mkA mkE'+(isE?' on':'')+'" data-act="mateso" aria-pressed="'+(isE?'true':'false')+'" aria-label="Esonerato">e</button>'+mkBtn(s.id,'1',m==='1')+mkBtn(s.id,'0',m==='0')+'</div>'}).join('');
   }
-  return '<p class="m" style="margin:6px 0">Scrivi i voti, per esempio 7 o 7,5. Per i segni usa i decimali: ,25 vale + (6,25 = 6+) e ,75 vale − (6,75 = 7−). Lascia vuoto chi era assente.</p><p class="err" id="e-test" hidden></p>'+
+  return '<div class="sbtns" style="margin:6px 0"><label class="btn ghost small" for="vtfile">Leggi i voti da foto o file</label><input class="sr" id="vtfile" type="file" accept="image/*,.pdf,.docx,.txt,.csv"></div><p class="m" id="vt-status" role="status" aria-live="polite" hidden></p><div id="vt-pick" hidden></div><p class="m" style="margin:6px 0">Scrivi i voti, per esempio 7 o 7,5. Per i segni usa i decimali: ,25 vale + (6,25 = 6+) e ,75 vale − (6,75 = 7−). Lascia vuoto chi era assente.</p><p class="err" id="e-test" hidden></p>'+
     ss.map(function(s){return '<div class="rv" style="align-items:center">'+numHTML(s)+'<span class="grow t">'+esc(s.name)+'</span><input class="gv" type="text" inputmode="decimal" autocomplete="off" data-sid="'+s.id+'" value="'+esc(gv[s.id]||'')+'" aria-label="Voto di '+esc(s.name)+'"></div>'}).join('');
 }
 function saveMatDraft(){
@@ -5554,8 +5554,9 @@ async function pdfItems(file,maxPages){
   var pages=[],n=Math.min(doc.numPages,maxPages||8);
   for(var p=1;p<=n;p++){
     var pg=await doc.getPage(p);
+    var vp=pg.getViewport({scale:1});
     var tc=await pg.getTextContent();
-    pages.push(tc.items.filter(function(it){return it.str&&it.str.trim()}).map(function(it){return {s:it.str.trim(),x:it.transform[4],y:it.transform[5],w:it.width||0}}));
+    pages.push(tc.items.filter(function(it){return it.str&&it.str.trim()}).map(function(it){var q=vp.convertToViewportPoint(it.transform[4],it.transform[5]);return {s:it.str.trim(),x:q[0],y:vp.height-q[1],w:it.width||0}}));
   }
   return pages;
 }
@@ -5958,6 +5959,171 @@ function renderOri(){
   h+='</div></div>';
   host.innerHTML=h;document.body.style.overflow='hidden';
   var nw=host.querySelector('.sheet');if(nw)nw.scrollTop=top;
+}
+
+/* ---------- voti di una verifica da foto o file ---------- */
+var VOTI_PROMPT='Leggi i voti di una verifica o di un registro (foto, scansione o tabella: per esempio un elenco con cognome, nome e uno o più voti) e restituisci SOLO un JSON, senza altro testo e senza backtick, con questa forma: {"colonne":["1","2"],"voti":[{"cognome":"Rossi","nome":"Luca","voti":["7+","6"]}],"note":""}. Regole: "voti" ha un elemento per ogni colonna di voto della tabella, nell’ordine, come scritto (per esempio 7, 7,5, 7+, 6-, 5/6); se la cella è vuota o è un’assenza, stringa vuota. Con una sola colonna "voti" ha un solo elemento. "colonne" contiene l’intestazione di ogni colonna di voto (per esempio il numero o la data), oppure stringhe vuote. Ti do sotto l’elenco degli alunni della classe per riconoscere i nomi, ma non inventare voti: riporta solo quelli che vedi. Ignora medie, date di nascita, numeri di registro e ogni altra colonna. In "note" una frase breve in italiano su eventuali problemi, altrimenti stringa vuota.';
+function vtTok(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(Boolean)}
+function vtGrade(t){
+  t=String(t==null?'':t).trim();
+  if(/^\d{2}[.,]\d{2}$/.test(t))return null;
+  var r=/^(\d{1,2})\s*[\/\-–]\s*(\d{1,2})$/.exec(t);
+  if(r&&Number(r[2])===Number(r[1])+1)return Number(r[1])+0.5;
+  return parseGrade(t);
+}
+function vtMatch(studs,entry){
+  var E={},best=null,bs=0,tie=false;
+  entry.forEach(function(t){E[t]=1});
+  studs.forEach(function(s){
+    var st=vtTok(s.name),words=st.filter(function(t){return t.length>1}),ini=st.filter(function(t){return t.length===1});
+    if(!words.length||!words.every(function(w){return E[w]}))return;
+    var sc=words.length*10;
+    if(ini.length){
+      var rest=entry.filter(function(t){return words.indexOf(t)<0});
+      if(!ini.every(function(i){return rest.some(function(t){return t.charAt(0)===i})}))return;
+      sc+=5;
+    }
+    if(sc>bs){bs=sc;best=s;tie=false}else if(sc===bs)tie=true;
+  });
+  return tie?null:best;
+}
+var VT_MARK=/^(a|ass|assente|sv|s\.?v\.?|nc|n\.?c\.?|e|g)$/i;
+/* voti di una riga: solo dopo il nome. key = posizione orizzontale (PDF) oppure numero di colonna */
+function vtRead(tokens,keyed){
+  var last=-1,g=[],ord=0;
+  tokens.forEach(function(k,i){if(/[a-zà-ÿ]/i.test(k.t)&&!VT_MARK.test(k.t))last=i});
+  tokens.forEach(function(k,i){
+    if(i<=last)return;
+    var v=vtGrade(k.t);if(v===null)return;
+    g.push({v:v,key:keyed?k.c:(k.i!==undefined?k.i:ord)});ord++;
+  });
+  return g;
+}
+function vtTokens(l){
+  if(/[;\t]/.test(l))return splitCsv(l).map(function(t,i){return {t:t,i:i}});
+  return String(l).trim().split(/\s+/).filter(Boolean).map(function(t){return {t:t}});
+}
+function vtPdfRows(items){
+  var its=items.slice().sort(function(a,b){return b.y-a.y||a.x-b.x}),rows=[],cur=null;
+  its.forEach(function(it){if(cur&&Math.abs(cur.y-it.y)<=3)cur.p.push(it);else{cur={y:it.y,p:[it]};rows.push(cur)}});
+  return rows.map(function(r){
+    var out=[];
+    r.p.sort(function(a,b){return a.x-b.x}).forEach(function(it){
+      var ts=it.s.split(/\s+/).filter(Boolean);
+      ts.forEach(function(t,k){out.push({t:t,c:it.x+(it.w||0)*(k+0.5)/ts.length})});
+    });
+    return out;
+  });
+}
+function vtCols(cells,mode,hdr,labs){
+  var groups=[],other=0;
+  if(mode==='x'){
+    cells.slice().sort(function(a,b){return a.key-b.key}).forEach(function(c){
+      var g=groups[groups.length-1];
+      if(g&&Math.abs(c.key-g.mean)<=6){g.items.push(c);g.mean=(g.mean*(g.items.length-1)+c.key)/g.items.length}
+      else groups.push({mean:c.key,items:[c]});
+    });
+  }else{
+    var by={};
+    cells.forEach(function(c){(by[c.key]=by[c.key]||{mean:c.key,items:[]}).items.push(c)});
+    groups=Object.keys(by).map(Number).sort(function(a,b){return a-b}).map(function(k){return by[k]});
+  }
+  return groups.map(function(g,i){
+    var vals={},n=0,label='';
+    g.items.forEach(function(c){if(!(c.sid in vals)){vals[c.sid]=c.v;n++}});
+    if(mode==='x'&&hdr.length){
+      var best=null;
+      hdr.forEach(function(x){var d=Math.abs(x.c-g.mean);if(d<=8&&(!best||d<best.d))best={n:x.n,d:d}});
+      label=best?'Voto '+best.n:'Altra colonna '+(++other);
+    }else{
+      var L=String(labs&&labs[g.mean]||'').trim();
+      label=L?(/^\d{1,2}$/.test(L)?'Voto '+L:L):'Colonna '+(i+1);
+    }
+    return {label:label,vals:vals,n:n};
+  });
+}
+function vtSay(m){var el=document.getElementById('vt-status');if(el){el.textContent=m;el.hidden=!m}}
+function vtPick(S){
+  var el=document.getElementById('vt-pick'),V=S.vt;if(!el||!V)return;
+  if(V.cols.length<2){el.hidden=true;el.innerHTML='';return}
+  el.innerHTML='<div class="f"><label for="vt-col">Colonna di voti da inserire</label><select id="vt-col">'+V.cols.map(function(c,i){
+    var ex=V.studs.filter(function(s){return c.vals[s.id]!==undefined}).slice(0,3).map(function(s){return fmtVoto(c.vals[s.id])}).join(', ');
+    return '<option value="'+i+'"'+(i===V.cur?' selected':'')+'>'+esc(c.label)+' · '+c.n+(c.n===1?' voto':' voti')+(ex?' (es. '+esc(ex)+')':'')+'</option>';
+  }).join('')+'</select></div>';
+  el.hidden=false;
+}
+function vtFill(i){
+  var S=sheet;if(!S||S.kind!=='test'||!S.vt||!document.querySelector('.gv'))return;
+  var V=S.vt,col=V.cols[i];if(!col)return;
+  V.cur=i;
+  function inp(sid){return document.querySelector('.gv[data-sid="'+sid+'"]')}
+  Object.keys(V.prev).forEach(function(sid){var e=inp(sid);if(e){e.value=V.prev[sid];S.gv[sid]=e.value}});
+  var n=0;
+  Object.keys(col.vals).forEach(function(sid){var e=inp(sid);if(!e)return;if(!(sid in V.prev))V.prev[sid]=e.value;e.value=fmtVoto(col.vals[sid]);S.gv[sid]=e.value;n++});
+  var miss=V.studs.filter(function(s){return col.vals[s.id]===undefined}).map(function(s){return s.name});
+  vtSay('Ho letto '+n+(n===1?' voto':' voti')+' su '+V.studs.length+' alunni'+(V.cols.length>1?' dalla colonna «'+col.label+'»':'')+(miss.length?'. Senza voto: '+miss.slice(0,6).join(', ')+(miss.length>6?' e altri '+(miss.length-6):''):'')+'.'+(V.cols.length>1?' Se non è la colonna giusta, cambiala qui sotto.':'')+(V.ocr?' La lettura di una foto senza Claude è meno precisa: controlla ogni voto.':' Controlla i voti prima di salvare.'));
+}
+function vtErr(e){
+  var c=e&&e.code;
+  if(c==='filetype')return 'Posso leggere foto (JPG, PNG), PDF, Word, testo e CSV.';
+  if(c==='not_granted'||c==='rate_limited')return oriErr(e);
+  return 'Non sono riuscito a leggere il file. Riprova con una foto più nitida o con il file originale.';
+}
+async function startVotiImport(file){
+  if(!file||!sheet||sheet.kind!=='test'||sheet.vtBusy)return;
+  var S=sheet,studs=studsOf(S.cls);
+  S.vtBusy=true;S.vt=null;vtSay('Sto leggendo il file…');
+  try{
+    var name=(file.name||'').toLowerCase(),cells=[],hdr=[],labs=null,mode='k',ocr=false;
+    function row(tokens,keyed){
+      var m=vtMatch(studs,vtTok(tokens.map(function(k){return k.t}).join(' ')));
+      if(!m){
+        if(keyed){var d=tokens.filter(function(k){return /^\d$/.test(k.t)});if(d.length>2&&d.every(function(k,i){return Number(k.t)===i+1}))d.forEach(function(k){hdr.push({n:k.t,c:k.c})})}
+        return;
+      }
+      vtRead(tokens,keyed).forEach(function(g){cells.push({sid:m.id,key:g.key,v:g.v})});
+    }
+    function textRows(lines){lines.forEach(function(l){row(vtTokens(l),false)})}
+    if(isLocalFile(file)){
+      if(file.type==='application/pdf'||/\.pdf$/.test(name)){
+        mode='x';
+        (await pdfItems(file,8)).forEach(function(it){vtPdfRows(it).forEach(function(r){row(r,true)})});
+      }else if(/\.docx$/.test(name)){
+        var d=await docxData(file),ls=[];
+        d.tables.forEach(function(tb){tb.forEach(function(r){ls.push(r.join(' ; '))})});
+        textRows(ls.concat(d.lines));
+      }else textRows(String(await file.text()).split(/\r?\n/));
+    }else if(/^image\//.test(file.type)||/\.(jpe?g|png|webp|gif|heic|heif)$/.test(name)){
+      var img=await fileToImage(file),sample=null,lim=null;
+      if(window.claude&&window.claude.use){try{sample=await window.claude.use('sample');lim=await sample.limits()}catch(e){sample=null}}
+      if(sample&&lim&&lim.images){
+        vtSay('Sto leggendo la foto. Può richiedere fino a un minuto.');
+        var data=await sample.json(VOTI_PROMPT+'\n\nAlunni della classe: '+studs.map(function(s){return s.name}).join(', '),{modelTier:'default',cache:false,images:[img]});
+        if(!data||!Array.isArray(data.voti))throw {code:'noparse'};
+        labs=Array.isArray(data.colonne)?data.colonne:null;
+        data.voti.forEach(function(x){
+          if(!x)return;
+          var m=vtMatch(studs,vtTok((x.cognome||'')+' '+(x.nome||'')));if(!m)return;
+          (Array.isArray(x.voti)?x.voti:[x.voto]).forEach(function(val,k){var g=vtGrade(val);if(g!==null)cells.push({sid:m.id,key:k,v:g})});
+        });
+      }else{
+        ocr=true;vtSay('Sto leggendo il testo della foto. Alla prima volta può richiedere una quindicina di secondi.');
+        await loadScript(LIBS.tesseract);
+        var res=await window.Tesseract.recognize(img,'ita');
+        textRows(String(res&&res.data&&res.data.text||'').split(/\r?\n/));
+      }
+    }else throw {code:'filetype'};
+    if(sheet!==S||!document.querySelector('.gv'))return;
+    if(mode==='x'&&hdr.length){var mn=Math.min.apply(null,hdr.map(function(x){return x.c}))-10;cells=cells.filter(function(c){return c.key>=mn})}
+    var cols=vtCols(cells,mode,hdr,labs);
+    if(!cols.length){vtSay('Non ho trovato voti che riesco ad associare agli alunni di questa classe. Controlla che nel file ci siano cognome (e nome) e voto sulla stessa riga.');return}
+    var def=0;
+    cols.forEach(function(c,i){if(/^Voto /.test(c.label))def=i});
+    S.vt={cols:cols,studs:studs,prev:{},ocr:ocr,cur:def};
+    vtPick(S);vtFill(def);
+  }catch(e){
+    if(sheet===S)vtSay(vtErr(e));
+  }finally{S.vtBusy=false}
 }
 
 /* ---------- classi e alunni da foto o file ---------- */
@@ -6710,6 +6876,8 @@ async function onAgendaChange(e){
   if(t.id==='ft'){ui().type=t.value;save();render();return}
   if(t.id==='fc'){ui().cls=t.value;save();render();return}
   if(t.id==='calcls'){ui().calCls=t.value;save();render();return}
+  if(t.id==='vt-col'){vtFill(Number(t.value));return}
+  if(t.id==='vtfile'){var vf=t.files&&t.files[0];if(vf)await startVotiImport(vf);t.value='';return}
   if(t.id==='clfile'||t.id==='clfile2'){var cf=t.files&&t.files[0];if(cf)await startClImport(cf);t.value='';return}
   if(t.id==='orfile'||t.id==='orfile2'){var of=t.files&&t.files[0];if(of)await startOrImport(of);t.value='';return}
   if(t.id==='docfile'||t.id==='calfile'){var f=t.files&&t.files[0];if(f)await handleFile(f,t);return}
