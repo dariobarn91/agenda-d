@@ -4486,6 +4486,7 @@ function renderVoti(){
   var tl=Object.keys(groups).map(function(k){return groups[k]}).sort(function(a,b){return a.date.localeCompare(b.date)||a.key.localeCompare(b.key)});
   function mean(a){return a.length?fmtG(a.reduce(function(x,y){return x+y},0)/a.length):'–'}
   var h='<div class="ov" id="ov"><div class="sheet vsheet" role="dialog" aria-modal="true" aria-label="Voti della classe"><h2>Voti di '+esc(c.name)+(curSubj(c)?' · '+esc(curSubj(c)):'')+'</h2>';
+  h+='<div class="sbtns" style="margin:6px 0 4px"><label class="btn ghost small" for="vtfile2">Leggi i voti da foto o file</label><input class="sr" id="vtfile2" type="file" accept="image/*,.pdf,.docx,.txt,.csv"></div><p class="m" style="margin:0 0 10px">I voti letti si aprono in una nuova verifica: controlli e salvi.</p>';
   if(!tl.length)h+='<p class="m empty">Non ci sono ancora voti in questa classe.</p>';
   else{
     h+='<div class="vwrap"><table class="vtbl"><thead><tr><th class="vn">Alunno</th>'+tl.map(function(t){return '<th><span class="vd">'+vtDate(t.date)+'</span><span class="vk">'+esc(t.desc||TIPI_TEST[t.type]||'')+'</span></th>'}).join('')+'<th class="vm">Media</th></tr></thead><tbody>';
@@ -6919,6 +6920,7 @@ async function onAgendaChange(e){
   if(t.id==='ft'){ui().type=t.value;save();render();return}
   if(t.id==='fc'){ui().cls=t.value;save();render();return}
   if(t.id==='calcls'){ui().calCls=t.value;save();render();return}
+  if(t.id==='vtfile2'){var vf2=t.files&&t.files[0],cid2=sheet&&sheet.cid;if(vf2&&cid2){openTest(cid2);var ty2=document.getElementById('f-type');if(ty2&&ty2.value==='materiale'){ty2.value='scritto';ty2.dispatchEvent(new Event('change',{bubbles:true}))}if(sheet&&sheet.kind==='test')await startVotiImport(vf2)}t.value='';return}
   if(t.id==='vt-col'){vtFill(Number(t.value));return}
   if(t.id==='vtfile'){var vf=t.files&&t.files[0];if(vf)await startVotiImport(vf);t.value='';return}
   if(t.id==='clfile'||t.id==='clfile2'){var cf=t.files&&t.files[0];if(cf)await startClImport(cf);t.value='';return}
