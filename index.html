@@ -5738,8 +5738,30 @@ function orarioFromCsv(rows){
   });
   return out;
 }
+function isImgFile(file){var n=(file.name||'').toLowerCase();return /^image\//.test(file.type)||/\.(jpe?g|png|webp|gif|heic|heif)$/.test(n)}
+function noClaude(){return !(window.claude&&window.claude.use)}
+async function ocrData(img,psm){
+  await loadScript(LIBS.tesseract);
+  var T=window.Tesseract,w=null;
+  try{
+    w=await T.createWorker('ita');
+    try{await w.setParameters({tessedit_pageseg_mode:String(psm||'3')})}catch(e){}
+    return (await w.recognize(img)).data||{};
+  }catch(e){
+    return (await T.recognize(img,'ita')).data||{};
+  }finally{if(w){try{await w.terminate()}catch(e){}}}
+}
+function ocrItems(data){
+  var ws=((data&&data.words)||[]).filter(function(x){return x&&x.bbox&&String(x.text||'').trim()});
+  if(!ws.length)return [];
+  var W=Math.max.apply(null,ws.map(function(x){return x.bbox.x1})),H=Math.max.apply(null,ws.map(function(x){return x.bbox.y1})),k=600/Math.max(W,1);
+  var out=ws.map(function(x){var b=x.bbox;return {s:String(x.text).trim(),x:b.x0*k,y:(H-(b.y0+b.y1)/2)*k,w:(b.x1-b.x0)*k}});
+  /* “1ª” letto come “18” accanto a un orario (08:00): scarto il numero, l'ora la ricavo dall'ordine delle righe */
+  var tm=out.filter(function(i){return /^\d{1,2}[:.]\d{2}$/.test(i.s)});
+  return out.filter(function(i){return !(/^\d{2}$/.test(i.s)&&labelHour(i.s)>maxHour()&&tm.some(function(t){return Math.abs(t.y-i.y)<=4&&i.x<t.x}))});
+}
 async function localOrario(file){
-  var name=(file.name||'').toLowerCase(),cells=[],lines=[],lezioni=[],ign=0,csvRows=null;
+  var name=(file.name||'').toLowerCase(),cells=[],lines=[],lezioni=[],ign=0,csvRows=null,ocr=false;
   function addGrid(g){if(g){cells=cells.concat(g.cells);ign+=g.ignored}}
   if(file.type==='application/pdf'||/\.pdf$/.test(name)){
     var pages=await pdfItems(file,6);
@@ -5748,6 +5770,9 @@ async function localOrario(file){
     var dd=await docxData(file);
     dd.tables.forEach(function(rows){addGrid(gridFromRows(rows))});
     lines=dd.lines;
+  }else if(isImgFile(file)){
+    var its=ocrItems(await ocrData(await fileToImage(file),'11'));
+    addGrid(gridFromItems(its));lines=itemsToLines(its);ocr=true;
   }else{
     var txt=String(await file.text());
     lines=txt.split(/\r?\n/);
@@ -5759,10 +5784,10 @@ async function localOrario(file){
   });
   if(!lezioni.length&&csvRows)lezioni=orarioFromCsv(csvRows);
   if(!lezioni.length)lezioni=orarioFromLines(lines);
-  var note='Letto sul dispositivo, senza Claude.';
+  var note=ocr?'Letto dalla foto sul dispositivo, senza Claude: controlla bene prima di salvare.':'Letto sul dispositivo, senza Claude.';
   if(ign)note+=' Ho ignorato le ore oltre la '+maxHour()+'ª.';
   if(lezioni.some(function(l){return l.materia==='Lezione'}))note+=' Dove la materia non c\'era ho scritto “Lezione”: puoi cambiarla dopo.';
-  if(!lezioni.length)note='Non ho trovato un orario che riesco a leggere sul dispositivo. Funziona con tabelle che hanno i giorni (Lun, Mar…) in alto e le ore (1ª, 2ª… o gli orari) a sinistra, oppure con righe come “Lunedì 1 3B Italiano”. Per le foto serve Claude.';
+  if(!lezioni.length)note='Non ho trovato un orario che riesco a leggere sul dispositivo. Funziona con tabelle che hanno i giorni (Lun, Mar…) in alto e le ore (1ª, 2ª… o gli orari) a sinistra, oppure con righe come “Lunedì 1 3B Italiano”. '+(ocr?'Prova con una foto più nitida e dritta, a tutta pagina, oppure con il file originale.':'Per le foto serve Claude.');
   return {lezioni:lezioni,note:note};
 }
 
@@ -5836,7 +5861,7 @@ function classiFromCsv(rows,fallback){
   return order;
 }
 async function localClassi(file){
-  var name=(file.name||'').toLowerCase(),lines=[],csvRows=null,groups=null;
+  var name=(file.name||'').toLowerCase(),lines=[],csvRows=null,groups=null,ocr=false;
   var fm=String(file.name||'').replace(/\.[a-z0-9]+$/i,'').match(/(?:^|[^0-9A-Za-z])([1-5])\s?[ªº°^]?\s?([A-Za-z])(?![A-Za-z])/);
   var fallback=fm?fm[1]+fm[2].toUpperCase():'';
   if(file.type==='application/pdf'||/\.pdf$/.test(name)){
@@ -5844,15 +5869,17 @@ async function localClassi(file){
     pages.forEach(function(it){lines=lines.concat(itemsToLines(it))});
   }else if(/\.docx$/.test(name)){
     lines=(await docxData(file)).lines;
+  }else if(isImgFile(file)){
+    lines=String((await ocrData(await fileToImage(file),'3')).text||'').split(/\r?\n/);ocr=true;
   }else{
     lines=String(await file.text()).split(/\r?\n/);
     csvRows=lines.map(splitCsv);
     groups=classiFromCsv(csvRows,fallback);
   }
   if(!groups||!groups.length)groups=classiFromLines(lines,fallback);
-  var note='Letto sul dispositivo, senza Claude.';
+  var note=ocr?'Letto dalla foto sul dispositivo, senza Claude: controlla nomi e classe prima di salvare.':'Letto sul dispositivo, senza Claude.';
   if(groups.some(function(g){return !g.name}))note+=' Non ho trovato il nome della classe: scrivilo come prima riga del file (per esempio “Classe 3B”) oppure nel nome del file.';
-  if(!groups.length)note='Non ho trovato un elenco di alunni che riesco a leggere sul dispositivo. Funziona con un nome per riga (Cognome Nome) e la classe indicata come “Classe 3B” in una riga o nel nome del file. Per le foto serve Claude.';
+  if(!groups.length)note='Non ho trovato un elenco di alunni che riesco a leggere sul dispositivo. Funziona con un nome per riga (Cognome Nome) e la classe indicata come “Classe 3B” in una riga o nel nome del file. '+(ocr?'Prova con una foto più nitida e dritta, oppure con il file originale.':'Per le foto serve Claude.');
   return {classi:groups.map(function(g){return {classe:g.name,materia:g.subject,alunni:g.raw.map(function(x){return x.toks?{toks:x.toks}:{cognome:x.sur,nome:x.first}})}}),note:note};
 }
 
@@ -5916,8 +5943,8 @@ async function startOrImport(file){
   function alive(){return sheet&&sheet.kind==='orimp'&&sheet.ctl===ctl}
   try{
     var data;
-    if(isLocalFile(file)){
-      sheet.msg='Sto leggendo il file sul dispositivo…';renderOri();
+    if(isLocalFile(file)||(isImgFile(file)&&noClaude())){
+      sheet.msg=isImgFile(file)?'Sto leggendo la foto sul dispositivo. Alla prima volta può richiedere una quindicina di secondi.':'Sto leggendo il file sul dispositivo…';renderOri();
       data=await localOrario(file);
       if(!alive())return;
     }else{
@@ -6259,8 +6286,8 @@ async function startClImport(file){
   function alive(){return sheet&&sheet.kind==='climp'&&sheet.ctl===ctl}
   try{
     var data;
-    if(isLocalFile(file)){
-      sheet.msg='Sto leggendo il file sul dispositivo…';renderCl();
+    if(isLocalFile(file)||(isImgFile(file)&&noClaude())){
+      sheet.msg=isImgFile(file)?'Sto leggendo la foto sul dispositivo. Alla prima volta può richiedere una quindicina di secondi.':'Sto leggendo il file sul dispositivo…';renderCl();
       data=await localClassi(file);
       if(!alive())return;
     }else{
