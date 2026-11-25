@@ -3010,7 +3010,7 @@ function vClasse(){
   var ss=studsOf(c.id);var gs=state.grades.filter(function(g){return g.cls===c.id&&subjOk(g)});var a=avgOf(gs);var cs=curSubj(c);
   var h=backLink('classi','Classi')+'<div class="h1row"><h1 class="h1t" role="button" tabindex="0" data-act="subjtop"data-id="'+c.id+'" aria-expanded="'+(subjTop===c.id?'true':'false')+'" aria-label="Materie di '+esc(c.name)+'">'+esc(c.name)+'<span class="h1chev'+(subjTop===c.id?' open':'')+'"><span class="h1sj">'+(cs?esc(cs):'Materia')+'</span>'+ic('down',18)+'</span></h1><button type="button" class="opill" data-act="clslessons" data-id="'+c.id+'">'+ic('note',18)+'Lezioni</button></div>'+(subjTop===c.id?'<div class="subjtop'+(subjTrayAnim?' anim':'')+'"><div class="sjchips">'+clsSubjList(c).map(function(n){return '<button type="button" class="sjchip'+(n===cs?' on':'')+'" data-act="subjchip" data-id="'+c.id+'" data-n="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+'<button type="button" class="sjchip add" data-act="subjnew" data-id="'+c.id+'" aria-label="Aggiungi materia">'+ic('plus',18)+'</button></div></div>':'')+'<p class="sub">'+ss.length+(ss.length===1?' alunno':' alunni')+(a!==null?', media '+fmtG(a):'')+'</p>';
   h+='<p class="m" style="margin-top:10px">Nomi, voti e annotazioni restano sul tuo dispositivo e, se hai fatto l’accesso, nel tuo account. Per proteggere gli alunni puoi usare cognome e iniziale oppure il numero di registro.</p>';
-  h+='<div class="noteb clsbtns" style="margin-top:12px"><button class="opill pri" data-act="newtest">'+ic('plus',18)+'Nuova verifica</button><button class="opill" data-act="edit" data-kind="class" data-id="'+c.id+'">'+ic('edit',18)+'Modifica classe</button><span class="brk" aria-hidden="true"></span><button class="opill" data-act="openprop">'+ic('check',18)+'Proposte di voto</button>'+toccaCard(c,ss)+'<button class="opill pdfr" data-act="pdfregistro"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>PDF</button></div>';
+  h+='<div class="noteb clsbtns" style="margin-top:12px"><button class="opill pri" data-act="newtest">'+ic('plus',18)+'Nuova verifica</button><button class="opill" data-act="edit" data-kind="class" data-id="'+c.id+'">'+ic('edit',18)+'Modifica classe</button><button class="opill" data-act="openvoti" style="padding-inline:9px;gap:5px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3.5H8a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8z"/><path d="M14 3.5V8h4"/><path d="M9.2 14l2 2 3.6-3.8"/></svg>Voti</button><span class="brk" aria-hidden="true"></span><button class="opill" data-act="openprop">'+ic('check',18)+'Proposte di voto</button>'+toccaCard(c,ss)+'<button class="opill pdfr" data-act="pdfregistro"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>PDF</button></div>';
   var groups={};
   gs.forEach(function(g){var k=testKey(g);var gp=(groups[k]=groups[k]||{key:k,date:g.date,type:g.type,desc:g.desc||'',v:[],e:0});if(g.eso)gp.e++;else gp.v.push(g.value)});
   var tl=Object.keys(groups).map(function(k){return groups[k]}).sort(function(x,y){return y.date.localeCompare(x.date)});
@@ -4472,6 +4472,36 @@ function delTest(){
   save();closeSheet();flash='Ho eliminato la verifica.';render();showUndo(usnap);
 }
 
+/* ---------- tabella dei voti della classe ---------- */
+function vtDate(s){var d=parse(s);return d.getDate()+' '+MESI3[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'')}
+function openVoti(cid){sheet={kind:'votes',cid:cid};renderVoti()}
+function renderVoti(){
+  var c=clsById(sheet.cid);if(!c){closeSheet();return}
+  var ss=studsOf(c.id),ids={},groups={};
+  ss.forEach(function(s){ids[s.id]=1});
+  state.grades.forEach(function(g){
+    if(g.cls!==c.id||g.type==='materiale'||!subjOk(g)||!ids[g.student])return;
+    var k=testKey(g);(groups[k]=groups[k]||{key:k,date:g.date,desc:g.desc||'',type:g.type,v:{}}).v[g.student]=g.value;
+  });
+  var tl=Object.keys(groups).map(function(k){return groups[k]}).sort(function(a,b){return a.date.localeCompare(b.date)||a.key.localeCompare(b.key)});
+  function mean(a){return a.length?fmtG(a.reduce(function(x,y){return x+y},0)/a.length):'–'}
+  var h='<div class="ov" id="ov"><div class="sheet vsheet" role="dialog" aria-modal="true" aria-label="Voti della classe"><h2>Voti di '+esc(c.name)+(curSubj(c)?' · '+esc(curSubj(c)):'')+'</h2>';
+  if(!tl.length)h+='<p class="m empty">Non ci sono ancora voti in questa classe.</p>';
+  else{
+    h+='<div class="vwrap"><table class="vtbl"><thead><tr><th class="vn">Alunno</th>'+tl.map(function(t){return '<th><span class="vd">'+vtDate(t.date)+'</span><span class="vk">'+esc(t.desc||TIPI_TEST[t.type]||'')+'</span></th>'}).join('')+'<th class="vm">Media</th></tr></thead><tbody>';
+    ss.forEach(function(s){
+      var vs=[];
+      h+='<tr><th class="vn" scope="row"><span class="vnum">'+numOf(s)+'</span>'+esc(s.name)+'</th>'+tl.map(function(t){
+        var v=t.v[s.id];if(v===undefined)return '<td class="vx">–</td>';
+        vs.push(v);return '<td'+(v<6?' class="vr"':'')+'>'+fmtVoto(v)+'</td>';
+      }).join('')+'<td class="vm">'+mean(vs)+'</td></tr>';
+    });
+    h+='<tr class="vavg"><th class="vn" scope="row">Media</th>'+tl.map(function(t){return '<td>'+mean(Object.keys(t.v).map(function(k){return t.v[k]}))+'</td>'}).join('')+'<td class="vm"></td></tr></tbody></table></div>';
+  }
+  h+='<div class="sbtns"><button class="btn ghost" data-act="close">Chiudi</button></div></div></div>';
+  document.getElementById('sheet').innerHTML=h;document.body.style.overflow='hidden';
+}
+
 /* ---------- squadre e gruppi ---------- */
 function shuffleArr(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
 function makeGroups(students,mode,num,size,balance){
@@ -5366,8 +5396,9 @@ async function buildPdf(opts){
   doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(214,224,252);
   subLines.forEach(function(l,k){doc.text(l,M+7,y+17+k*5)});
   y+=bh+8;doc.setTextColor(INK[0],INK[1],INK[2]);
-  if(opts.table){
-    var T=opts.table;
+  var TABS=Array.isArray(opts.table)?opts.table:(opts.table?[opts.table]:[]);
+  TABS.forEach(function(T,ti){
+    if(T.caption){need(14);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.text(T.caption,M,y+3);y+=7;doc.setTextColor(INK[0],INK[1],INK[2])}
     var drawHead=function(){
       need(14);
       doc.setFillColor(SOFT[0],SOFT[1],SOFT[2]);doc.roundedRect(M,y,maxW,8,3,3,'F');
@@ -5383,8 +5414,9 @@ async function buildPdf(opts){
       r.forEach(function(c,i){var parts=doc.splitTextToSize(String(c),T.widths[i]-3);var tx=parts[0]||'';if(parts.length>1)tx=tx.replace(/\s+$/,'')+'…';doc.text(tx,rx+2.5,y+3.9);rx+=T.widths[i]});
       y+=7.4;
     });
-    if(opts.note){y+=4;need(10);doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.splitTextToSize(opts.note,maxW).forEach(function(l){need(5);doc.text(l,M,y+3);y+=4.2});doc.setTextColor(INK[0],INK[1],INK[2])}
-  }
+    if(opts.note&&ti===TABS.length-1){y+=4;need(10);doc.setFontSize(8.5);doc.setTextColor(MUTED[0],MUTED[1],MUTED[2]);doc.splitTextToSize(opts.note,maxW).forEach(function(l){need(5);doc.text(l,M,y+3);y+=4.2});doc.setTextColor(INK[0],INK[1],INK[2])}
+    if(ti<TABS.length-1)y+=6;
+  });
   /* elenchi: ogni voce è una scheda con barra colorata */
   (opts.items||[]).forEach(function(it){
     var lines=doc.splitTextToSize(it.t||'',maxW-12);
@@ -5468,13 +5500,24 @@ async function exportClassPdf(cid,what){
     if(what==='voti'){
       var any=ss.some(function(st){return gradesOf(st.id).length});
       if(!any){flash='Non ci sono ancora voti in questa classe.';render();return}
-      var rows=ss.map(function(st,i){
-        var g=gradesOf(st.id).slice().sort(function(a,b){return String(a.date).localeCompare(String(b.date))});
-        var av=avgOf(g);
-        return [i+1,st.name,g.map(function(x){return fmtVoto(x.value)}).join(', '),av===null?'':fmtG(av)];
-      });
+      var ids={},grp={};
+      ss.forEach(function(st){ids[st.id]=1});
+      state.grades.forEach(function(g){if(g.cls!==cid||g.type==='materiale'||!subjOk(g)||!ids[g.student])return;var k=testKey(g);(grp[k]=grp[k]||{key:k,date:g.date,desc:g.desc||'',type:g.type,v:{}}).v[g.student]=g.value});
+      var vt=Object.keys(grp).map(function(k){return grp[k]}).sort(function(a,b){return String(a.date).localeCompare(String(b.date))||a.key.localeCompare(b.key)});
+      var dm=function(s){var d=parse(s);return pad(d.getDate())+'/'+pad(d.getMonth()+1)};
+      var per=8,tabs=[];
+      for(var ci=0;ci<vt.length;ci+=per){
+        var ch=vt.slice(ci,ci+per),lastT=ci+per>=vt.length;
+        tabs.push({
+          caption:vt.length>per?'Verifiche dal '+dm(ch[0].date)+' al '+dm(ch[ch.length-1].date):'',
+          head:['N.','Alunno'].concat(ch.map(function(t){return dm(t.date)})).concat(lastT?['Media']:[]),
+          widths:[8,180-8-14*ch.length-(lastT?18:0)].concat(ch.map(function(){return 14})).concat(lastT?[18]:[]),
+          rows:ss.map(function(st,i){var av=avgOf(gradesOf(st.id));return [i+1,st.name].concat(ch.map(function(t){return t.v[st.id]===undefined?'-':fmtVoto(t.v[st.id])})).concat(lastT?[av===null?'':fmtG(av)]:[])})
+        });
+      }
       var all=avgOf(state.grades.filter(function(g){return g.cls===cid&&subjOk(g)}));
-      await buildPdf({title:'Voti '+ttl,sub:sub+' \u00b7 aggiornato al '+shortDate(iso(new Date())),table:{head:['N.','Alunno','Voti','Media'],widths:[10,62,88,20],rows:rows},note:all===null?'':'Media della classe: '+fmtG(all),file:'voti-'+fslug+'.pdf'});
+      var legend='Verifiche: '+vt.map(function(t){return dm(t.date)+' '+(t.desc||TIPI_TEST[t.type]||'')}).join(' \u00b7 ')+'.'+(vt.length>per?' La media comprende tutte le verifiche.':'')+(all===null?'':'\nMedia della classe: '+fmtG(all));
+      await buildPdf({title:'Voti '+ttl,sub:sub+' \u00b7 aggiornato al '+shortDate(iso(new Date())),table:tabs,note:legend,file:'voti-'+fslug+'.pdf'});
     }else if(what==='materiale'){
       var tests={};
       state.grades.filter(function(g){return g.cls===cid&&g.type==='materiale'&&subjOk(g)}).forEach(function(g){var k=testKey(g);if(!tests[k])tests[k]={key:k,date:g.date,desc:g.desc||''};});
@@ -5525,7 +5568,7 @@ async function exportPropPdf(cid,pk){
     await buildPdf({title:'Proposte di voto '+ttl,sub:schoolName(c.school)+' \u00b7 '+pr.label+' \u00b7 aggiornato al '+shortDate(iso(new Date())),table:{head:['N.','Alunno','Media','Proposta'],widths:[10,100,35,35],rows:trs},note:items.length?'Le note per il consiglio sono elencate sotto la tabella.':'',items:items,file:'proposte-'+fslug+'-'+(pr.pk==='all'?'anno':pdfSlug(pr.label.split(' (')[0]))+'.pdf'});
   }catch(e){flash='Non sono riuscito a creare il PDF. Controlla la connessione e riprova.';render()}
 }
-var EXP_HINT={lezioni:'Elenco delle lezioni svolte: data, materia, argomento e note.',materiale:'Tabella con chi aveva il materiale (sì o no) in ogni verifica di materiale.',voti:'Elenco degli alunni con i voti e la media.',proposte:'Le proposte di voto scritte per ogni alunno, con la media e le note per il consiglio.',consiglio:'Quadro della classe per i consigli: medie, assenze, materiale e segnalazioni. Poi scegli il periodo.'};
+var EXP_HINT={lezioni:'Elenco delle lezioni svolte: data, materia, argomento e note.',materiale:'Tabella con chi aveva il materiale (sì o no) in ogni verifica di materiale.',voti:'Tabella degli alunni con i voti di ogni verifica, con la data, e la media.',proposte:'Le proposte di voto scritte per ogni alunno, con la media e le note per il consiglio.',consiglio:'Quadro della classe per i consigli: medie, assenze, materiale e segnalazioni. Poi scegli il periodo.'};
 function openExport(cid){
   sheet={kind:'exportcls',cls:cid};
   var h='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Esporta in PDF"><h2>Esporta in PDF</h2><div class="form">'+
@@ -6702,7 +6745,7 @@ async function onAgendaClick(e){
   else if(a==='opencls'){subjTop=null;selCls=el.dataset.id;cur='classe';render();resetScroll()}
   else if(a==='collstud'){var cs0=studById(el.dataset.id);if(cs0){studFrom='coll';selStud=cs0.id;selCls=cs0.cls;cur='stud';render();resetScroll()}}
   else if(a==='openstud'){studFrom='';selStud=el.dataset.id;cur='stud';render();resetScroll()}
-  else if(a==='newtest')openTest(selCls);
+  else if(a==='newtest')openTest(selCls);else if(a==='openvoti')openVoti(selCls);
   else if(a==='addstuds')openSheet('students',null,null,{cls:selCls});else if(a==='addstudsfrom'){var cid=el.dataset.id;closeSheet();openSheet('students',null,null,{cls:cid})}
   else if(a==='savetest')saveTest();
   else if(a==='taskreset'){ui().type='';ui().cls='';save();render()}
@@ -7598,5 +7641,21 @@ function open(){
 window.AgendaInstall={open:open,close:close,active:function(){return !!root}};
 })();
 </script>
+<style id="voti-css">
+#sheet .vsheet{max-width:min(96vw,760px)}
+.vwrap{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:12px;margin:8px 0 12px;-webkit-overflow-scrolling:touch}
+.vtbl{border-collapse:separate;border-spacing:0;font-size:15px;min-width:100%}
+.vtbl th,.vtbl td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--card);color:var(--ink)}
+.vtbl thead th{position:sticky;top:0;z-index:2;font-weight:700;vertical-align:bottom}
+.vtbl .vn{position:sticky;left:0;z-index:1;text-align:left;font-weight:700;border-right:1px solid var(--line)}
+.vtbl thead .vn{z-index:3}
+.vtbl .vd{display:block}
+.vtbl .vk{display:block;font-size:12px;color:var(--ink2);font-weight:400;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+.vtbl .vnum{display:inline-block;min-width:22px;color:var(--ink2);font-weight:400}
+.vtbl .vm{font-weight:700;background:var(--blue-bg);color:var(--blue)}
+.vtbl .vr{color:var(--red);font-weight:700}
+.vtbl .vx{color:var(--ink2)}
+.vtbl .vavg th,.vtbl .vavg td{font-weight:700;border-bottom:0}
+</style>
 </body>
 </html>
