@@ -2002,7 +2002,7 @@ function vOrd(){
       if(!cell.length){
         h+='<button class="gc" data-act="cell" data-day="'+d+'" data-hour="'+hr+'" data-slot="'+d+'-'+hr+'" aria-label="Aggiungi una lezione: '+GIORNI[d]+', '+hr+'ª ora"></button>';
       }else{
-        h+='<span class="gcs" data-slot="'+d+'-'+hr+'"'+(cell.length>1?' data-n="'+Math.min(cell.length,5)+'"':'')+'>'+cell.map(function(l){
+        h+='<span class="gcs" data-slot="'+d+'-'+hr+'"'+(cell.length>1?' data-n="'+Math.min(cell.length,5)+'"':'')+(cell.length===1&&cell[0].room&&state.school!=='all'?' data-room="1"':'')+'>'+cell.map(function(l){
           var ck=classColorKey(l.school,l.cls),sk=subjectColorKey(l.school,l.subject);
           var sw=swatchStyle(ck,sk);
           var all=state.school==='all';
@@ -7842,6 +7842,13 @@ window.AgendaInstall={open:open,close:close,active:function(){return !!root}};
 .vtbl .vr{color:var(--red);font-weight:700}
 .vtbl .vx{color:var(--ink2)}
 .vtbl .vavg th,.vtbl .vavg td{font-weight:700;border-bottom:0}
+</style>
+<style id="orario-fix">
+.ocard .grid>.gc,.ocard .grid>.gcs,.ocard .grid>.gcs[data-n]{height:auto;min-height:54px}
+.ocard .grid>.gcs[data-n]{min-height:62px}
+.ocard .gcs[data-room]>.gc{gap:0}
+.ocard .gcs[data-room]>.gc b{font-size:15px;line-height:1.15}
+.ocard .gcs[data-room]>.gc small{font-size:10.5px;line-height:1.2}
 </style>
 </body>
 </html>
