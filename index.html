@@ -5672,14 +5672,13 @@ function gridFromItems(items){
     if(it.x+it.w/2>=leftEdge)return;
     var h=labelHour(it.s);
     if(!h)return;
-    var dup=labs.filter(function(l){return Math.abs(l.y-it.y)<=4})[0];
+    var dup=labs.filter(function(l){return Math.abs(l.y-it.y)<=16})[0];
     if(dup){if(dup.h===-1&&h>0)dup.h=h;return}
     labs.push({y:it.y,h:h});
   });
   if(!labs.length)return null;
   labs.sort(function(a,b){return b.y-a.y});
-  var rank=0;
-  labs.forEach(function(l){if(l.h===-1)l.h=++rank});
+  labs.forEach(function(l,i){if(l.h===-1)l.h=i+1});
   var rowH=labs.length>1?Math.abs(labs[0].y-labs[1].y):40;
   labs.forEach(function(l,i){
     l.top=i?(labs[i-1].y+l.y)/2:Math.min(best.y-3,l.y+rowH/2);
@@ -5693,7 +5692,7 @@ function gridFromItems(items){
         var cx=it.x+it.w/2;
         return cx>=leftEdge&&cx>=c.lo&&cx<c.hi&&it.y<=l.top&&it.y>l.bot;
       }).sort(function(a,b){return b.y-a.y||a.x-b.x});
-      cells.push({day:c.n,hour:l.h,text:part.map(function(q){return q.s}).join(' ')});
+      cells.push({day:c.n,hour:l.h,text:part.map(function(q){return q.s}).join(' '),lines:itemsToLines(part)});
     });
   });
   return {cells:cells,ignored:ign};
@@ -5751,6 +5750,70 @@ async function ocrData(img,psm){
     return (await T.recognize(img,'ita')).data||{};
   }finally{if(w){try{await w.terminate()}catch(e){}}}
 }
+async function ocrPrep(img,invert){
+  var bmp=await createImageBitmap(img);
+  var k=bmp.width<1600?1600/bmp.width:(bmp.width>2200?2200/bmp.width:1);
+  var c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+  var x=c.getContext('2d');x.imageSmoothingQuality='high';x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(bmp,0,0,c.width,c.height);
+  var id=x.getImageData(0,0,c.width,c.height),d=id.data,n=d.length/4,h=new Array(256).fill(0),i,g;
+  for(i=0;i<n;i++){g=Math.round(0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2]);d[i*4]=g;h[g]++}
+  var lo=0,hi=255,a=0;
+  for(i=0;i<256;i++){a+=h[i];if(a>=n*0.01){lo=i;break}}
+  a=0;for(i=255;i>=0;i--){a+=h[i];if(a>=n*0.01){hi=i;break}}
+  var sc=hi-lo>30?255/(hi-lo):1;if(sc===1)lo=0;
+  for(i=0;i<n;i++){g=Math.max(0,Math.min(255,Math.round((d[i*4]-lo)*sc)));if(invert)g=255-g;d[i*4]=d[i*4+1]=d[i*4+2]=g;d[i*4+3]=255}
+  x.putImageData(id,0,0);
+  return await new Promise(function(res){c.toBlob(function(b){res(b)},'image/png')});
+}
+function ocrMerge(ws){
+  ws=ws.slice().sort(function(a,b){return (b.confidence||0)-(a.confidence||0)});
+  var kept=[];
+  ws.forEach(function(w){
+    var b=w.bbox,ar=(b.x1-b.x0)*(b.y1-b.y0);
+    var clash=kept.some(function(q){
+      var r=q.bbox,ix=Math.min(b.x1,r.x1)-Math.max(b.x0,r.x0),iy=Math.min(b.y1,r.y1)-Math.max(b.y0,r.y0);
+      return ix>0&&iy>0&&ix*iy>0.5*Math.min(ar,(r.x1-r.x0)*(r.y1-r.y0));
+    });
+    if(!clash)kept.push(w);
+  });
+  return kept;
+}
+async function ocrWordsMulti(img,psm){
+  await loadScript(LIBS.tesseract);
+  var T=window.Tesseract,w=null,all=[];
+  try{
+    w=await T.createWorker('ita');
+    try{await w.setParameters({tessedit_pageseg_mode:String(psm||'11')})}catch(e){}
+    var vs=[false,true];
+    for(var i=0;i<vs.length;i++){
+      var pre=null;try{pre=await ocrPrep(img,vs[i])}catch(e){pre=null}
+      if(!pre){if(i===0)pre=img;else break}
+      var d=(await w.recognize(pre)).data||{};
+      (d.words||[]).forEach(function(x){if(x&&x.bbox&&String(x.text||'').trim()&&(x.confidence==null||x.confidence>=40||/^[1-5]\s?[A-Za-z]$/.test(String(x.text).trim())))all.push(x)});
+    }
+    return {words:ocrMerge(all)};
+  }catch(e){
+    return (await T.recognize(img,'ita')).data||{};
+  }finally{if(w){try{await w.terminate()}catch(e){}}}
+}
+function ocrFixSubjects(ls){
+  var f={};ls.forEach(function(l){f[l.materia]=(f[l.materia]||0)+1});
+  var keys=Object.keys(f),map={};
+  function nm(t){return t.toLowerCase().replace(/[^a-z0-9à-ÿ]/g,'')}
+  function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++){m[i]=[i];for(j=1;j<=b.length;j++)m[i][j]=i?0:j}
+    for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    return m[a.length][b.length]}
+  keys.forEach(function(sj){
+    var ns=nm(sj),best=null;
+    keys.forEach(function(t){
+      if(t===sj||f[t]<2||f[t]<=f[sj])return;
+      var nt=nm(t),near=lev(ns,nt)<=Math.max(2,Math.floor(nt.length*0.25))||(f[sj]===1&&f[t]>=3&&ns.length>=3&&nt.indexOf(ns)>-1);
+      if(near&&(!best||f[t]>f[best]))best=t;
+    });
+    if(best)map[sj]=best;
+  });
+  ls.forEach(function(l){if(map[l.materia])l.materia=map[l.materia]});
+}
 function ocrItems(data){
   var ws=((data&&data.words)||[]).filter(function(x){return x&&x.bbox&&String(x.text||'').trim()});
   if(!ws.length)return [];
@@ -5758,7 +5821,7 @@ function ocrItems(data){
   var out=ws.map(function(x){var b=x.bbox;return {s:String(x.text).trim(),x:b.x0*k,y:(H-(b.y0+b.y1)/2)*k,w:(b.x1-b.x0)*k}});
   /* “1ª” letto come “18” accanto a un orario (08:00): scarto il numero, l'ora la ricavo dall'ordine delle righe */
   var tm=out.filter(function(i){return /^\d{1,2}[:.]\d{2}$/.test(i.s)});
-  return out.filter(function(i){return !(/^\d{2}$/.test(i.s)&&labelHour(i.s)>maxHour()&&tm.some(function(t){return Math.abs(t.y-i.y)<=4&&i.x<t.x}))});
+  return out.filter(function(i){return !(/^\d{2}$/.test(i.s)&&labelHour(i.s)>maxHour()&&tm.some(function(t){return Math.abs(t.y-i.y)<=16&&Math.abs(i.x-t.x)<=20}))});
 }
 async function localOrario(file){
   var name=(file.name||'').toLowerCase(),cells=[],lines=[],lezioni=[],ign=0,csvRows=null,ocr=false;
@@ -5771,7 +5834,7 @@ async function localOrario(file){
     dd.tables.forEach(function(rows){addGrid(gridFromRows(rows))});
     lines=dd.lines;
   }else if(isImgFile(file)){
-    var its=ocrItems(await ocrData(await fileToImage(file),'11'));
+    var its=ocrItems(await ocrWordsMulti(await fileToImage(file),'11'));
     addGrid(gridFromItems(its));lines=itemsToLines(its);ocr=true;
   }else{
     var txt=String(await file.text());
@@ -5780,10 +5843,13 @@ async function localOrario(file){
     addGrid(gridFromRows(csvRows));
   }
   cells.forEach(function(c){
-    parseCell(c.text).forEach(function(e){lezioni.push({giorno:c.day,ora:c.hour,classe:e.cls,materia:e.subject,aula:e.room})});
+    var txt=c.text,room='',ls=c.lines||[];
+    if(ocr&&ls.length>=3&&parseCell(ls[0]).length&&!parseCell(ls[1]).length&&!/\b(?:aula|lab)/i.test(ls[1])){room=ls[1];txt=ls[0]+' '+ls.slice(2).join(' ')}
+    parseCell(txt).forEach(function(e){lezioni.push({giorno:c.day,ora:c.hour,classe:e.cls,materia:e.subject,aula:e.room||room})});
   });
   if(!lezioni.length&&csvRows)lezioni=orarioFromCsv(csvRows);
   if(!lezioni.length)lezioni=orarioFromLines(lines);
+  if(ocr)ocrFixSubjects(lezioni);
   var note=ocr?'Letto dalla foto sul dispositivo, senza Claude: controlla bene prima di salvare.':'Letto sul dispositivo, senza Claude.';
   if(ign)note+=' Ho ignorato le ore oltre la '+maxHour()+'ª.';
   if(lezioni.some(function(l){return l.materia==='Lezione'}))note+=' Dove la materia non c\'era ho scritto “Lezione”: puoi cambiarla dopo.';
