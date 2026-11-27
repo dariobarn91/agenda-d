@@ -1581,7 +1581,7 @@ function classOptions(selected){
 function dayWord(s){
   var n=diff(s);if(n===0)return 'Oggi';if(n===1)return 'Domani';
   var d=parse(s);
-  if(n>1&&n<7)return GIORNI[d.getDay()];
+  if(n>1&&n<7)return GIORNI[d.getDay()]+' '+pad(d.getDate())+'/'+pad(d.getMonth()+1);
   return GIORNI3[d.getDay()]+' '+d.getDate()+' '+MESI3[d.getMonth()];
 }
 var nxIdx=0,nxCount=0;
