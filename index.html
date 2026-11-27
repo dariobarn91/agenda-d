@@ -4459,10 +4459,29 @@ function saveTest(){
   state.grades=state.grades.filter(function(g){return !drop[g.id]}).concat(add);
   if(isMat&&state.matDraft)delete state.matDraft[mdk(sheet.cls)];
   if(isMat&&sheet.useAbs&&date<=iso(new Date())){vals.forEach(function(x){if(date===iso(new Date()))absSet(x.sid,!!x.abs);else if(x.abs)absSetD(date,x.sid,true)})}
-  var editing=!!sheet.key;
+  var editing=!!sheet.key,askRoll=null;
+  if(isMat&&sheet.useAbs&&date<=iso(new Date())&&!offDay(date)){
+    var cA=clsById(sheet.cls),ssA=cA?studsOf(sheet.cls):[];
+    if(cA&&ssA.length){
+      var sjA=curSubj(cA)||'',kA=cA.id+'|'+date+'|'+sjA;
+      if(!(state.rolls||[]).some(function(x){return x.id===kA})){
+        askRoll={cid:cA.id,date:date,subj:sjA,tot:ssA.length,abs:ssA.filter(function(s){return absOnD(date,s.id)}).length,blank:vals.filter(function(x){return x.v===null&&!x.abs}).length};
+      }
+    }
+  }
   save();closeSheet();
   flash=editing?'Ho aggiornato la verifica.':(isMat?('Ho segnato il materiale di '+filled.length+(filled.length===1?' alunno.':' alunni.')):('Ho salvato '+filled.length+(filled.length===1?' voto.':' voti.')));
   render();
+  if(askRoll)askRollAfterMat(askRoll);
+}
+function askRollAfterMat(r){
+  sheet={kind:'rollask',cid:r.cid,date:r.date,subj:r.subj};
+  var pr=r.tot-r.abs;
+  document.getElementById('sheet').innerHTML='<div class="ov" id="ov"><div class="sheet" role="dialog" aria-modal="true" aria-label="Appello"><h2>Salvo anche l\u2019appello?</h2>'+
+    '<p class="m" style="margin:0 0 8px">L\u2019appello di '+whenOf(r.date)+' non è ancora stato fatto. Dal materiale risultano <b>'+pr+' '+(pr===1?'presente':'presenti')+'</b> e <b>'+r.abs+' '+(r.abs===1?'assente':'assenti')+'</b> su '+r.tot+'.</p>'+
+    (r.blank?'<p class="m" style="margin:0 0 8px">'+r.blank+(r.blank===1?' alunno lasciato vuoto risulta presente.':' alunni lasciati vuoti risultano presenti.')+'</p>':'')+
+    '<div class="sbtns"><button type="button" class="btn" data-act="rollmatyes">Sì, conferma l\u2019appello</button><button type="button" class="btn ghost" data-act="rollmatno">No, lo faccio dopo</button></div></div></div>';
+  document.body.style.overflow='hidden';
 }
 function delTest(){
   var btn=document.getElementById('delbtn');
@@ -7020,6 +7039,8 @@ async function onAgendaClick(e){
   else if(a==='absadd'){var ak=el.dataset.t;openSheet('absence',null,ak==='orario'?{type:'orario',hours:'1'}:{type:ak,days:'1'});return}
   else if(a==='asmadd'){openSheet('absence',null,{type:'assemblea',hours:'1'});return}
   else if(a==='rollok'){var rc=clsById(el.dataset.id);if(rc){var rd=el.dataset.d,rs=curSubj(rc)||'',rkk=rc.id+'|'+rd+'|'+rs;state.rolls=state.rolls||[];if(!state.rolls.some(function(x){return x.id===rkk}))state.rolls.push({id:rkk,cls:rc.id,date:rd,subject:rs,at:Date.now()});save();render();return}}
+  else if(a==='rollmatyes'){var rr=sheet&&sheet.kind==='rollask'?sheet:null;if(rr){var rkm=rr.cid+'|'+rr.date+'|'+rr.subj;state.rolls=state.rolls||[];if(!state.rolls.some(function(x){return x.id===rkm}))state.rolls.push({id:rkm,cls:rr.cid,date:rr.date,subject:rr.subj,at:Date.now()});save();closeSheet();flash='Appello confermato.';render();return}}
+  else if(a==='rollmatno'){closeSheet();return}
   else if(a==='rollundo'){var rc2=clsById(el.dataset.id);if(rc2){var rkk2=rc2.id+'|'+el.dataset.d+'|'+(curSubj(rc2)||'');state.rolls=(state.rolls||[]).filter(function(x){return x.id!==rkk2});studsOf(rc2.id).forEach(function(s){absSetD(el.dataset.d,s.id,false)});ui().clsOpt=false;save();render();return}}
   else if(a==='fab')fabAction();
   else if(a==='addclass')openClassesAdd();else if(a==='caadd')caAddRow();else if(a==='casave')caSave();
